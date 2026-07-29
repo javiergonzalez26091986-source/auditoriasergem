@@ -163,22 +163,23 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
         if df_archivos_nube.empty:
             return pd.DataFrame()
             
-        # 1. Buscamos el archivo de matriz en la lista que trajo la API de Drive
-        match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("Matriz de Observaciones", case=False, na=False)]
+        # CORRECCIÓN: Búsqueda mucho más específica usando el consecutivo exacto
+        match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("RM-4278-25-Matriz", case=False, na=False)]
         
         if match.empty:
-            return pd.DataFrame() # No se encontró el archivo
+            st.error("No se encontró el archivo RM-4278-25-Matriz en la nube.")
+            return pd.DataFrame() 
             
-        # 2. Obtenemos su ID y creamos un link de descarga directa
+        # Obtenemos su ID y creamos el link de descarga directa
         file_id = match.iloc[0]['id']
         url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
         
         try:
-            # 3. Leemos directo desde la URL. header=15 equivale a la fila 16 de tu Excel
+            # Leemos directo desde la URL. header=15 equivale a la fila 16 de tu Excel
             df = pd.read_excel(url_descarga, sheet_name='AÑO', header=15)
             df = df.iloc[1:].copy() # Saltamos la fila donde dice "DD MM AA"
             
-            # 4. Extraemos y renombramos solo las columnas necesarias
+            # Extraemos y renombramos solo las columnas necesarias
             columnas = ['NOMBRE DE INFORME O AUDITORIA', 'COMPONENTE', 'OBSERVACIÓN', 'ESTADO', 'TIPO', 'COMO FUE SUBSANADO (ACTIVIDAD REALIZADA)']
             df_clean = df[columnas].copy()
             
@@ -195,7 +196,8 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
             df_clean['Estado'] = df_clean['Estado'].fillna('SIN ESTADO')
             return df_clean
         except Exception as e:
-            st.error(f"Error interno al procesar el Excel: {e}")
+            # Si falla, solo mostrará el error real sin el segundo mensaje redundante
+            st.error(f"Error al intentar leer las pestañas del archivo: {e}")
             return pd.DataFrame()
 
     df_nov = cargar_matriz_observaciones(df_archivos)
@@ -227,5 +229,3 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                     st.success(row['Subsanación (Actividad)'])
                 else:
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
-    else:
-        st.error("No se pudo cargar el archivo Excel. Verifica que el archivo de la Matriz esté alojado en tu Google Drive junto a los demás documentos y que el script de Apps Script lo esté detectando.")
