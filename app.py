@@ -4,12 +4,17 @@ import requests
 import base64
 import os
 import io
+import random
 import plotly.express as px
 import openpyxl
-from docx import Document
-from docx.shared import Pt, Inches
-from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.enum.table import WD_TABLE_ALIGNMENT
+
+# LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+from reportlab.lib.units import inch
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
@@ -95,7 +100,7 @@ def actualizar_fecha_inventario_excel(file_id):
     return None
 
 # -----------------------------------------------------------------------------
-# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS
+# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (PDF)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -250,127 +255,89 @@ def obtener_datos_qms(requisito):
             }
         }
 
-def generar_documento_word(requisito):
+def generar_documento_pdf(requisito):
     datos_doc = obtener_datos_qms(requisito)
-    doc = Document()
+    output = io.BytesIO()
     
     # Márgenes: Quedan 6.9 pulgadas exactas
-    for section in doc.sections:
-        section.top_margin = Inches(0.5)
-        section.bottom_margin = Inches(0.5)
-        section.left_margin = Inches(0.8)
-        section.right_margin = Inches(0.8)
-
-    # ENCABEZADO 2024
-    table = doc.add_table(rows=2, cols=5)
-    table.style = 'Table Grid'
-    table.alignment = WD_TABLE_ALIGNMENT.CENTER
-    table.autofit = False
+    doc = SimpleDocTemplate(output, pagesize=letter, rightMargin=0.8*inch, leftMargin=0.8*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+    styles = getSampleStyleSheet()
     
-    widths = [Inches(1.4), Inches(1.4), Inches(1.3), Inches(1.4), Inches(1.4)]
-    for row in table.rows:
-        for idx, width in enumerate(widths):
-            row.cells[idx].width = width
+    style_center = ParagraphStyle(name='Center', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
+    style_normal = ParagraphStyle(name='Justify', parent=styles['Normal'], alignment=TA_JUSTIFY, fontName='Helvetica', fontSize=10)
+    style_bold_center = ParagraphStyle(name='BoldCenter', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
 
-    # Logos
-    cell_logo_L = table.cell(0, 0)
-    cell_logo_L.merge(table.cell(1, 0))
-    p_logo_L = cell_logo_L.paragraphs[0]
-    p_logo_L.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # 1. ENCABEZADO 2024 (Adaptado a ReportLab)
+    logo_path = "sergemLogo.png"
+    if os.path.exists(logo_path):
+        logo_img = RLImage(logo_path, width=1.1*inch, height=1.1*inch)
+    else:
+        logo_img = Paragraph("LOGO", style_bold_center)
+        
+    # FECHA ALEATORIA EN MAYO DE 2026
+    dia_aleatorio = random.randint(1, 31)
+    fecha_generada = f"{dia_aleatorio:02d}/05/2026"
 
-    cell_logo_R = table.cell(0, 4)
-    cell_logo_R.merge(table.cell(1, 4))
-    p_logo_R = cell_logo_R.paragraphs[0]
-    p_logo_R.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    header_data = [
+        [logo_img, Paragraph(requisito.upper(), style_center), '', '', logo_img],
+        ['', Paragraph(f"Código: {datos_doc['codigo']}", style_bold_center), Paragraph("Versión No.1", style_bold_center), Paragraph(fecha_generada, style_bold_center), '']
+    ]
     
-    for p in [p_logo_L, p_logo_R]:
-        try:
-            if os.path.exists("sergemLogo.png"):
-                p.add_run().add_picture("sergemLogo.png", width=Inches(1.1))
-            else:
-                p.add_run("LOGO").bold = True
-        except:
-            p.add_run("LOGO").bold = True
+    t_header = Table(header_data, colWidths=[1.4*inch, 1.4*inch, 1.3*inch, 1.4*inch, 1.4*inch])
+    t_header.setStyle(TableStyle([
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ('SPAN', (0,0), (0,1)), 
+        ('SPAN', (4,0), (4,1)), 
+        ('SPAN', (1,0), (3,0)), 
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(t_header)
+    elements.append(Spacer(1, 0.2*inch))
 
-    # Título Central
-    cell_title = table.cell(0, 1)
-    cell_title.merge(table.cell(0, 3))
-    p_title = cell_title.paragraphs[0]
-    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run_title = p_title.add_run(requisito.upper())
-    run_title.bold = True
-    run_title.font.size = Pt(10)
-
-    # Metadatos
-    p_cod = table.cell(1, 1).paragraphs[0]
-    p_cod.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_cod.add_run(f"Código: {datos_doc['codigo']}").bold = True
-
-    p_ver = table.cell(1, 2).paragraphs[0]
-    p_ver.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_ver.add_run("Versión No.1").bold = True
-
-    # FECHA DE MAYO DE 2026 APLICADA AQUÍ
-    p_fec = table.cell(1, 3).paragraphs[0]
-    p_fec.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_fec.add_run("15/05/2026").bold = True
-
-    doc.add_paragraph() 
-
-    # GENERACIÓN DINÁMICA DE SECCIONES
+    # 2. GENERACIÓN DINÁMICA DE SECCIONES
     for titulo, contenido in datos_doc['secciones'].items():
-        t = doc.add_table(rows=2, cols=1)
-        t.style = 'Table Grid'
-        t.alignment = WD_TABLE_ALIGNMENT.CENTER
-        t.autofit = False
-        
-        for row in t.rows:
-            row.cells[0].width = Inches(6.9)
-        
-        p_tit = t.cell(0, 0).paragraphs[0]
-        if "CLÁUSULAS" not in titulo: 
-            p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = p_tit.add_run(titulo)
-        run.bold = True
-        
-        t.cell(1, 0).text = contenido
-        doc.add_paragraph() 
+        contenido_rl = contenido.replace('\n', '<br/>')
+        body_data = [
+            [Paragraph(titulo, style_bold_center)],
+            [Paragraph(contenido_rl, style_normal)]
+        ]
+        t_body = Table(body_data, colWidths=[6.9*inch])
+        t_body.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('TOPPADDING', (0,0), (-1,-1), 8),
+        ]))
+        elements.append(t_body)
+        elements.append(Spacer(1, 0.1*inch))
 
-    # ---------------------------------------------------------
-    # FIRMAS Y CONTROL DE CAMBIOS DINÁMICO
-    # ---------------------------------------------------------
+    # 3. FIRMAS Y CONTROL DE CAMBIOS DINÁMICO
+    elements.append(Spacer(1, 0.2*inch))
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
         # Tabla de 3 columnas para documentos QMS oficiales
-        doc.add_paragraph() # Espacio
-        table_firmas = doc.add_table(rows=2, cols=3)
-        table_firmas.style = 'Table Grid'
-        table_firmas.alignment = WD_TABLE_ALIGNMENT.CENTER
-        table_firmas.autofit = False
-        
-        # Anchos iguales (6.9 pulgadas en total)
-        for row in table_firmas.rows:
-            for cell in row.cells:
-                cell.width = Inches(2.3)
-                
-        # Encabezados
-        for i, text in enumerate(["Elaborado por:", "Revisado por:", "Aprobado por:"]):
-            p = table_firmas.cell(0, i).paragraphs[0]
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            run = p.add_run(text)
-            run.bold = True
-            
-        # Contenido de la firma (sin espacio físico según indicación)
-        table_firmas.cell(1, 0).text = "Nombre: Yesenia Beltrán\nCargo: Directora Administrativa"
-        table_firmas.cell(1, 1).text = "Nombre: Yesenia Beltrán\nCargo: Directora Administrativa"
-        table_firmas.cell(1, 2).text = "Nombre: José Reinel Torres\nCargo: Gerente"
-
+        sig_data = [
+            [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
+            [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
+             Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
+             Paragraph("Nombre: José Reinel Torres<br/>Cargo: Gerente", style_normal)]
+        ]
+        t_sig = Table(sig_data, colWidths=[2.3*inch, 2.3*inch, 2.3*inch])
+        t_sig.setStyle(TableStyle([
+            ('GRID', (0,0), (-1,-1), 1, colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ('TOPPADDING', (0,0), (-1,-1), 10),
+        ]))
+        elements.append(t_sig)
     else:
         # Línea de firma simple para actas, capacitaciones y contratos
-        p_firma = doc.add_paragraph(f"\n\n{datos_doc['tipo_firma']}: ___________________________________")
-        p_firma.bold = True
+        elements.append(Paragraph(f"{datos_doc['tipo_firma']}: ___________________________________", style_bold_center))
     
-    output = io.BytesIO()
-    doc.save(output)
+    doc.build(elements)
     return output.getvalue()
 
 # -----------------------------------------------------------------------------
@@ -650,22 +617,40 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         col_qms, col_auto = st.columns(2)
         with col_qms:
             st.markdown("### 📝 Motor Generador de Documentos QMS")
-            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM (Versión 2024), listo para firmar.")
+            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM, con fecha aleatoria de Mayo, listo en PDF y enviado a Drive.")
             
             if lista_faltantes:
                 req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
                 
-                if st.button(f"🪄 Crear Word Oficial: {req_selec}"):
-                    archivo_word = generar_documento_word(req_selec)
-                    nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.docx"
-                    
-                    st.download_button(
-                        label="⬇️ Descargar Documento Listo para Firmar", 
-                        data=archivo_word, 
-                        file_name=nombre_descarga, 
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
-                        type="secondary"
-                    )
+                if st.button(f"🪄 Crear y Subir PDF Oficial: {req_selec}"):
+                    with st.spinner("Generando PDF y enviando a Google Drive..."):
+                        archivo_pdf = generar_documento_pdf(req_selec)
+                        nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.pdf"
+                        
+                        pdf_b64 = base64.b64encode(archivo_pdf).decode('utf-8')
+                        payload = {
+                            "action": "subir_archivo",
+                            "nombre": nombre_descarga,
+                            "base64": pdf_b64,
+                            "mimeType": "application/pdf"
+                        }
+                        
+                        try:
+                            res_post = requests.post(URL_API_DRIVE, json=payload)
+                            if res_post.status_code == 200:
+                                st.success("✅ Archivo PDF generado y enviado exitosamente a la carpeta Auditoría actual.")
+                            else:
+                                st.warning("✅ PDF generado localmente, pero el Drive no respondió correctamente la subida.")
+                        except Exception as e:
+                            st.error(f"Error de conexión con el Drive: {e}")
+                            
+                        st.download_button(
+                            label="⬇️ Descargar Copia Local (PDF)", 
+                            data=archivo_pdf, 
+                            file_name=nombre_descarga, 
+                            mime="application/pdf", 
+                            type="secondary"
+                        )
             else:
                 st.success("✅ ¡Todos los documentos están listos!")
 
