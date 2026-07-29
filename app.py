@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURACIÓN Y ESTILOS AVANZADOS (INCLUYE CORRECCIÓN DE BOTONES)
+# 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Auditoría SGSI - SERGEM", 
@@ -74,13 +74,12 @@ def obtener_archivos_drive():
     return pd.DataFrame()
 
 def mostrar_visor_archivo(file_id, nombre_archivo):
-    ext = nombre_archivo.split('.')[-1].lower()
-    if ext in ['pdf', 'xlsx', 'xls', 'csv']:
-        url = f"https://drive.google.com/file/d/{file_id}/preview" if ext == 'pdf' else f"https://docs.google.com/spreadsheets/d/{file_id}/preview"
-        st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
-    else:
-        url = f"https://drive.google.com/file/d/{file_id}/preview"
-        st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
+    """
+    CORRECCIÓN: Se utiliza el enlace universal de previsualización de Google Drive 
+    para evitar errores con Google Sheets en archivos Excel (.xlsx).
+    """
+    url = f"https://drive.google.com/file/d/{file_id}/preview"
+    st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
 
 df_archivos = obtener_archivos_drive()
 
@@ -148,7 +147,7 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 5. MÓDULO CORREGIDO: NOVEDADES AUDITORÍA PASADA LEYENDO DESDE DRIVE
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA 
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
@@ -163,23 +162,19 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
         if df_archivos_nube.empty:
             return pd.DataFrame()
             
-        # CORRECCIÓN: Búsqueda mucho más específica usando el consecutivo exacto
         match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("RM-4278-25-Matriz", case=False, na=False)]
         
         if match.empty:
             st.error("No se encontró el archivo RM-4278-25-Matriz en la nube.")
             return pd.DataFrame() 
             
-        # Obtenemos su ID y creamos el link de descarga directa
         file_id = match.iloc[0]['id']
         url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
         
         try:
-            # Leemos directo desde la URL. header=15 equivale a la fila 16 de tu Excel
             df = pd.read_excel(url_descarga, sheet_name='AÑO', header=15)
-            df = df.iloc[1:].copy() # Saltamos la fila donde dice "DD MM AA"
+            df = df.iloc[1:].copy()
             
-            # Extraemos y renombramos solo las columnas necesarias
             columnas = ['NOMBRE DE INFORME O AUDITORIA', 'COMPONENTE', 'OBSERVACIÓN', 'ESTADO', 'TIPO', 'COMO FUE SUBSANADO (ACTIVIDAD REALIZADA)']
             df_clean = df[columnas].copy()
             
@@ -196,7 +191,6 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
             df_clean['Estado'] = df_clean['Estado'].fillna('SIN ESTADO')
             return df_clean
         except Exception as e:
-            # Si falla, solo mostrará el error real sin el segundo mensaje redundante
             st.error(f"Error al intentar leer las pestañas del archivo: {e}")
             return pd.DataFrame()
 
