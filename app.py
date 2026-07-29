@@ -102,68 +102,81 @@ def actualizar_fecha_inventario_excel(file_id):
 def generar_documento_word(requisito):
     doc = Document()
     
-    # Márgenes de documento oficial
+    # Márgenes
     for section in doc.sections:
         section.top_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
 
-    # ENCABEZADO: Estructura exacta de 3x3 para replicar el PDF oficial
-    table = doc.add_table(rows=3, cols=3)
+    # NUEVO ENCABEZADO 2024: 2 filas x 5 columnas
+    table = doc.add_table(rows=2, cols=5)
     table.style = 'Table Grid'
     
-    # Ajuste de columnas
-    table.columns[0].width = Inches(1.5)
-    table.columns[1].width = Inches(3.5)
-    table.columns[2].width = Inches(1.5)
+    # Ajuste aproximado de columnas
+    widths = [Inches(1.2), Inches(1.5), Inches(1.0), Inches(1.0), Inches(1.2)]
+    for row in table.rows:
+        for idx, width in enumerate(widths):
+            row.cells[idx].width = width
 
-    # Celda del Logo (fusionar verticalmente)
-    cell_logo = table.cell(0, 0)
-    cell_logo.merge(table.cell(2, 0))
-    p_logo = cell_logo.paragraphs[0]
-    p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    try:
-        if os.path.exists("sergemLogo.png"):
-            p_logo.add_run().add_picture("sergemLogo.png", width=Inches(1.2))
-        else:
-            p_logo.add_run("LOGO\nSERGEM").bold = True
-    except:
-        p_logo.add_run("LOGO\nSERGEM").bold = True
+    # Logo Izquierdo (Fusión Vertical)
+    cell_logo_L = table.cell(0, 0)
+    cell_logo_L.merge(table.cell(1, 0))
+    p_logo_L = cell_logo_L.paragraphs[0]
+    p_logo_L.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Celda Central (Títulos)
-    cell_title_top = table.cell(0, 1)
-    cell_title_top.merge(table.cell(1, 1))
-    p_title1 = cell_title_top.paragraphs[0]
-    p_title1.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_title1.add_run("FORMATO SGSI - SERGEM\n").bold = True
+    # Logo Derecho (Fusión Vertical)
+    cell_logo_R = table.cell(0, 4)
+    cell_logo_R.merge(table.cell(1, 4))
+    p_logo_R = cell_logo_R.paragraphs[0]
+    p_logo_R.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    cell_title_bot = table.cell(2, 1)
-    p_title2 = cell_title_bot.paragraphs[0]
-    p_title2.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_title2.add_run(requisito.upper()).bold = True
+    # Incrustar imágenes a ambos lados
+    for p in [p_logo_L, p_logo_R]:
+        try:
+            if os.path.exists("sergemLogo.png"):
+                p.add_run().add_picture("sergemLogo.png", width=Inches(0.9))
+            else:
+                p.add_run("LOGO").bold = True
+        except:
+            p.add_run("LOGO").bold = True
 
-    # Celda Derecha (Metadatos)
-    table.cell(0, 2).text = "Código: SG-08-001"
-    table.cell(1, 2).text = "Fecha: 29/07/2026"
-    table.cell(2, 2).text = "Versión: 1"
+    # Título Central (Fusión Horizontal en fila 0, abarca col 1, 2 y 3)
+    cell_title = table.cell(0, 1)
+    cell_title.merge(table.cell(0, 3))
+    p_title = cell_title.paragraphs[0]
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run_title = p_title.add_run(requisito.upper())
+    run_title.bold = True
+    run_title.font.size = Pt(11)
 
-    doc.add_paragraph() # Espacio
+    # Metadatos en fila 1 (Código, Versión, Fecha)
+    p_cod = table.cell(1, 1).paragraphs[0]
+    p_cod.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_cod.add_run("Código: PO-07-014").bold = True
+
+    p_ver = table.cell(1, 2).paragraphs[0]
+    p_ver.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_ver.add_run("Versión No.1").bold = True
+
+    p_fec = table.cell(1, 3).paragraphs[0]
+    p_fec.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_fec.add_run("29/07/2026").bold = True
+
+    doc.add_paragraph() # Espacio separador
 
     # FUNCIÓN INTERNA PARA CREAR SECCIONES TIPO "ACTA" (Cuadros)
     def crear_seccion_cuadro(titulo, contenido):
         t = doc.add_table(rows=2, cols=1)
         t.style = 'Table Grid'
         
-        # Título de la sección
         p_tit = t.cell(0, 0).paragraphs[0]
         p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = p_tit.add_run(titulo)
         run.bold = True
         
-        # Contenido de la sección
         t.cell(1, 0).text = contenido
-        doc.add_paragraph() # Espacio separador
+        doc.add_paragraph() 
 
     # LÓGICA DE CONTENIDO SEGÚN REQUISITO
     if "capacitaci" in requisito.lower() or "planillas" in requisito.lower():
@@ -183,7 +196,7 @@ def generar_documento_word(requisito):
         crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", texto_politica)
         crear_seccion_cuadro("COMPROMISOS", "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001.")
 
-    # FIRMA (Idéntica al formato oficial)
+    # FIRMA
     p_firma = doc.add_paragraph("\n\nFIRMA RESPONSABLE / APROBADOR: ___________________________________")
     p_firma.bold = True
     
@@ -482,7 +495,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         
         with col_qms:
             st.markdown("### 📝 Motor Generador de Documentos QMS")
-            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM, listo para firmar.")
+            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM (Versión 2024), listo para firmar.")
             
             if lista_faltantes:
                 req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
