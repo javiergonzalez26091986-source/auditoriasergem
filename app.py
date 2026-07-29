@@ -638,7 +638,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                         try:
                             res_post = requests.post(URL_API_DRIVE, json=payload)
                             if res_post.status_code == 200:
-                                st.success("✅ Archivo PDF generado y enviado exitosamente a la carpeta Auditoría actual.")
+                                st.success("✅ Archivo documento PDF extraído.")
                             else:
                                 st.warning("✅ PDF generado localmente, pero el Drive no respondió correctamente la subida.")
                         except Exception as e:
