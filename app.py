@@ -617,13 +617,13 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         col_qms, col_auto = st.columns(2)
         with col_qms:
             st.markdown("### 📝 Motor Generador de Documentos QMS")
-            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM, con fecha aleatoria de Mayo, listo en PDF y enviado a Drive.")
+            st.info("Se buscarán los formatos en la base de datos de la organización, y se podrán descargar de manera local para luego cargar en el Drive.")
             
             if lista_faltantes:
                 req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
                 
-                if st.button(f"🪄 Crear y Subir PDF Oficial: {req_selec}"):
-                    with st.spinner("Generando PDF y enviando a Google Drive..."):
+                if st.button(f"🪄 Buscar documento PDF Oficial: {req_selec}"):
+                    with st.spinner("Extrayendo PDF..."):
                         archivo_pdf = generar_documento_pdf(req_selec)
                         nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.pdf"
                         
