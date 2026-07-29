@@ -64,7 +64,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y HERRAMIENTAS DE EDICIÓN
+# 2. CONEXIONES API Y HERRAMIENTAS DE EDICIÓN EXCEL
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -74,7 +74,7 @@ def obtener_archivos_drive():
         res = requests.get(URL_API_DRIVE)
         if res.status_code == 200:
             return pd.DataFrame(res.json())
-    except:
+    except Exception as e:
         pass
     return pd.DataFrame()
 
@@ -100,86 +100,97 @@ def actualizar_fecha_inventario_excel(file_id):
         pass
     return None
 
-# --- MOTOR DE CONOCIMIENTO QMS ---
+# -----------------------------------------------------------------------------
+# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (WORD)
+# -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
     
-    if "emergencia" in req or "pérdida" in req:
+    # 3.1 FORMATO ACTAS / CONTRATOS
+    if "confidencialidad" in req or "acuerdo" in req or "contrato" in req:
         return {
-            "codigo": "PR-07-015",
-            "objetivo": "Establecer un plan de acción inmediato para mitigar, responder y recuperar la información ante incidentes críticos, ciberataques o desastres físicos.",
-            "reglas": "- Aislar inmediatamente los equipos afectados de la red corporativa.\n- Activar el protocolo de contingencia notificando al Comité de Crisis.\n- Contactar a SOLINUX para iniciar la restauración de copias de seguridad en la nube.\n- Registrar el incidente en la bitácora de seguridad.",
-            "compromisos": "Restaurar la operatividad de los sistemas críticos en un tiempo máximo de 4 horas (RTO) y garantizar una pérdida de datos no mayor a 24 horas (RPO)."
+            "codigo": "PO-07-014",
+            "tipo_firma": "CONTRATISTA / PROVEEDOR",
+            "secciones": {
+                "IDENTIFICACIÓN DEL CONTRATISTA": "NOMBRE DE LA SOCIEDAD: [Ingresar Razón Social]\nNIT: [Ingresar NIT]\nREPRESENTANTE LEGAL: [Ingresar Nombre]\nNÚMERO DE IDENTIFICACIÓN: [Ingresar Cédula]",
+                "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' que reciba por parte de SERGEM SAS.\n\nSEGUNDA. La parte receptora se obliga a mantener de manera confidencial la información y a no darla a una tercera parte diferente de su equipo de trabajo autorizado.\n\nTERCERA. Para el caso del manejo de información que incluya datos personales, el CONTRATISTA dará estricto cumplimiento a las disposiciones constitucionales sobre habeas data (Ley 1581 de 2012).\n\nCUARTA. La vigencia de la presente acta será indefinida mientras exista relación comercial."
+            }
         }
-    elif "retirado" in req or "base de datos" in req:
+    
+    # 3.2 FORMATO PROCEDIMIENTOS / PLANES (Estructura detallada)
+    elif "procedimiento" in req or "plan" in req or "copia" in req or "restauración" in req:
+        if "emergencia" in req:
+            codigo = "PR-07-015"
+        elif "copia" in req or "restauración" in req:
+            codigo = "PR-07-021"
+        else:
+            codigo = "PR-07-011"
+        
+        if "copia" in req or "restauración" in req:
+            texto_proc = "1. El área de TI solicita a SOLINUX la evidencia del backup diario/semanal en la nube.\n2. Semestralmente, se agenda una ventana de mantenimiento.\n3. SOLINUX ejecuta la restauración en un ambiente de pruebas.\n4. TI de SERGEM valida la integridad de los datos restaurados y firma el acta de conformidad."
+        else:
+            texto_proc = "1. Detección y reporte inmediato del evento a Mesa de Ayuda.\n2. Análisis, clasificación y asignación por parte de TI.\n3. Ejecución de actividades de contención y solución técnica.\n4. Registro en bitácora, cierre y lecciones aprendidas."
+
         return {
-            "codigo": "FO-08-020",
-            "objetivo": "Mantener un registro actualizado y controlado del personal retirado para inhabilitar oportunamente sus accesos lógicos y físicos al SGSI.",
-            "reglas": "- Gestión Humana debe notificar el retiro del personal el mismo día de la novedad.\n- El área de TI inhabilitará las cuentas de correo, ERP y VPN en un plazo máximo de 24 horas.\n- Es obligatoria la devolución del carnet, tokens y equipos asignados antes de la liquidación.",
-            "compromisos": "Asegurar al 100% que ningún ex-colaborador o tercero inactivo mantenga privilegios de acceso a la información confidencial de SERGEM."
+            "codigo": codigo,
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": f"Establecer los lineamientos y actividades detalladas para dar cumplimiento a: {requisito}, garantizando la seguridad de la información en SERGEM.",
+                "2. ALCANCE": "Este documento aplica para todos los equipos, sistemas de información y personal (interno y externo) de SERGEM Mensajería S.A.S. a nivel nacional.",
+                "3. DEFINICIONES": "• SGSI: Sistema de Gestión de Seguridad de la Información.\n• Incidente: Evento adverso que compromete la confidencialidad, integridad o disponibilidad.\n• Activo: Cualquier elemento que tenga valor para la organización.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• Es de carácter obligatorio el estricto cumplimiento de los pasos descritos en este procedimiento.\n• Todo desvío debe ser autorizado por la Gerencia y documentado formalmente.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": texto_proc,
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Norma ISO/IEC 27001:2022.\n• PO-07-001 Política Marco de Seguridad de la Información SERGEM."
+            }
         }
-    elif "contraseña" in req or "clave" in req:
+        
+    # 3.3 FORMATO CAPACITACIONES / ACTAS FORMATIVAS
+    elif "capacitaci" in req or "planillas" in req:
         return {
-            "codigo": "PO-07-004",
-            "objetivo": "Definir los lineamientos robustos para la creación, protección y rotación de contraseñas de los sistemas de información de SERGEM.",
-            "reglas": "- Las contraseñas deben tener una longitud mínima de 8 caracteres alfanuméricos (incluyendo mayúsculas y símbolos).\n- Es de carácter obligatorio el cambio de contraseña cada 90 días.\n- Prohibido compartir credenciales, anotarlas en medios físicos visibles o usar contraseñas personales.",
-            "compromisos": "Prevenir el acceso no autorizado a los sistemas mediante una autenticación robusta y auditable."
+            "codigo": "FO-08-002",
+            "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
+            "secciones": {
+                "AGENDA DE LA REUNIÓN": "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta.\n\nTema principal: " + requisito,
+                "DESARROLLO DE LA REUNIÓN": "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
+                "COMPROMISOS": "La política tiene como objeto dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM."
+            }
         }
-    elif "móvil" in req or "dispositivo" in req:
-        return {
-            "codigo": "PO-07-008",
-            "objetivo": "Establecer las normas de seguridad para el uso de dispositivos móviles (Smartphones, Tablets, Laptops) que procesan información de la compañía.",
-            "reglas": "- Está prohibido almacenar información confidencial o bases de datos de clientes en dispositivos personales no autorizados (BYOD).\n- Todo equipo móvil corporativo debe contar con cifrado de disco, PIN de bloqueo y antivirus actualizado.\n- En caso de pérdida o robo, se debe reportar inmediatamente para el borrado remoto.",
-            "compromisos": "Garantizar la protección de los datos corporativos fuera del perímetro físico de las instalaciones de SERGEM."
-        }
-    elif "incidentes" in req:
-        return {
-            "codigo": "PR-07-011",
-            "objetivo": "Estandarizar el procedimiento para la identificación, clasificación, reporte y resolución de incidentes de seguridad de la información.",
-            "reglas": "- Todo usuario tiene la obligación de reportar cualquier anomalía (correos sospechosos, lentitud extrema, pérdida de datos) a la Mesa de Ayuda.\n- TI clasificará el incidente según su impacto (Alto, Medio, Bajo) y documentará la causa raíz.\n- Se deben aplicar acciones correctivas y preventivas (CAPA) para evitar la recurrencia.",
-            "compromisos": "Mantener un registro auditable del 100% de los incidentes y reducir los tiempos de resolución técnica."
-        }
-    elif "disciplinario" in req:
-        return {
-            "codigo": "PO-03-002",
-            "objetivo": "Establecer las sanciones aplicables ante el incumplimiento de las políticas del Sistema de Gestión de Seguridad de la Información (SGSI).",
-            "reglas": "- El uso indebido de los activos de TI será considerado una falta grave al Reglamento Interno de Trabajo.\n- Las infracciones serán evaluadas por el Comité de Convivencia y Gerencia para determinar suspensiones o terminación de contrato con justa causa.\n- Las violaciones a la Ley de Habeas Data (Ley 1581) serán reportadas a las autoridades competentes.",
-            "compromisos": "Fomentar una cultura de cumplimiento y responsabilidad legal frente al manejo de la información."
-        }
-    elif "copia" in req or "restauración" in req or "backup" in req:
-        return {
-            "codigo": "PR-07-021",
-            "objetivo": "Garantizar la disponibilidad e integridad de la información mediante la realización de copias de seguridad en la nube y pruebas de restauración.",
-            "reglas": "- SERGEM delega la administración técnica de los backups en la nube a su proveedor certificado SOLINUX.\n- Se ejecutarán copias de seguridad incrementales diarias y completas semanales.\n- El área de TI de SERGEM coordinará con SOLINUX la ejecución de pruebas de restauración semestrales, documentando los resultados en actas formales.",
-            "compromisos": "Asegurar la continuidad del negocio y verificar la efectividad técnica del proveedor en la recuperación de datos."
-        }
-    elif "actualización" in req or "recursos" in req:
-        return {
-            "codigo": "PL-07-005",
-            "objetivo": "Planificar la renovación y actualización del hardware y software de la compañía para mitigar riesgos por obsolescencia tecnológica.",
-            "reglas": "- Se realizará una revisión anual del Inventario de TI para identificar equipos con más de 5 años de antigüedad.\n- Los sistemas operativos y antivirus deben mantenerse en su última versión estable soportada por el fabricante.\n- Las adquisiciones de nuevo hardware deben estar alineadas al presupuesto anual aprobado por Gerencia.",
-            "compromisos": "Proveer a los colaboradores herramientas tecnológicas seguras, modernas y eficientes."
-        }
+        
+    # 3.4 FORMATO POLÍTICAS Y REGLAMENTOS
     else:
+        if "contraseña" in req:
+            codigo = "PO-07-004"
+            reglas = "• Longitud mínima de 8 caracteres alfanuméricos.\n• Cambio obligatorio cada 90 días.\n• Prohibido compartir credenciales."
+        elif "móvil" in req or "dispositivo" in req:
+            codigo = "PO-07-008"
+            reglas = "• El personal debe cumplir estrictamente con los controles definidos.\n• El uso de dispositivos personales para información corporativa está restringido."
+        else:
+            codigo = "PO-07-099"
+            reglas = "• El personal debe cumplir estrictamente con los controles definidos.\n• El incumplimiento generará medidas disciplinarias según el Reglamento Interno."
+            
         return {
-            "codigo": "SG-07-099",
-            "objetivo": f"Establecer los lineamientos y controles normativos aplicables a: {requisito.title()}.",
-            "reglas": "- El personal debe cumplir estrictamente con los controles definidos por la norma ISO 27001.\n- La ejecución de las actividades debe documentarse en los formatos oficiales del QMS.\n- El incumplimiento generará las respectivas medidas correctivas.",
-            "compromisos": "Garantizar la mejora continua, la confidencialidad y el resguardo de la información de la compañía."
+            "codigo": codigo,
+            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "secciones": {
+                "1. OBJETIVO DEL DOCUMENTO": f"Establecer la política corporativa para regular y controlar: {requisito.lower()}.",
+                "2. ALCANCE": "Aplica para todos los empleados y contratistas de SERGEM Mensajería S.A.S.",
+                "3. DIRECTRICES DE SEGURIDAD": reglas,
+                "4. COMPROMISOS": "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001."
+            }
         }
 
 def generar_documento_word(requisito):
     datos_doc = obtener_datos_qms(requisito)
     doc = Document()
     
-    # Márgenes: Quedan 6.9 pulgadas exactas de área de trabajo
+    # Márgenes: Quedan 6.9 pulgadas exactas
     for section in doc.sections:
         section.top_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
 
-    # ENCABEZADO 2024 (Alineado)
+    # ENCABEZADO 2024
     table = doc.add_table(rows=2, cols=5)
     table.style = 'Table Grid'
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -190,13 +201,12 @@ def generar_documento_word(requisito):
         for idx, width in enumerate(widths):
             row.cells[idx].width = width
 
-    # Logo Izquierdo
+    # Logos Izquierda y Derecha
     cell_logo_L = table.cell(0, 0)
     cell_logo_L.merge(table.cell(1, 0))
     p_logo_L = cell_logo_L.paragraphs[0]
     p_logo_L.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Logo Derecho
     cell_logo_R = table.cell(0, 4)
     cell_logo_R.merge(table.cell(1, 4))
     p_logo_R = cell_logo_R.paragraphs[0]
@@ -211,7 +221,7 @@ def generar_documento_word(requisito):
         except:
             p.add_run("LOGO").bold = True
 
-    # Título Central Dinámico
+    # Título Central
     cell_title = table.cell(0, 1)
     cell_title.merge(table.cell(0, 3))
     p_title = cell_title.paragraphs[0]
@@ -235,66 +245,58 @@ def generar_documento_word(requisito):
 
     doc.add_paragraph() 
 
-    # Cajas de Contenido
-    def crear_seccion_cuadro(titulo, contenido):
+    # GENERACIÓN DINÁMICA DE SECCIONES
+    for titulo, contenido in datos_doc['secciones'].items():
         t = doc.add_table(rows=2, cols=1)
         t.style = 'Table Grid'
         t.alignment = WD_TABLE_ALIGNMENT.CENTER
         t.autofit = False
+        
         for row in t.rows:
             row.cells[0].width = Inches(6.9)
         
         p_tit = t.cell(0, 0).paragraphs[0]
-        p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        if "CLÁUSULAS" not in titulo: 
+            p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run = p_tit.add_run(titulo)
         run.bold = True
         
         t.cell(1, 0).text = contenido
         doc.add_paragraph() 
 
-    if "capacitaci" in requisito.lower() or "planillas" in requisito.lower():
-        crear_seccion_cuadro("AGENDA DE LA REUNIÓN", "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta para validación de: " + requisito)
-        crear_seccion_cuadro("DESARROLLO DE LA REUNIÓN", "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.")
-        crear_seccion_cuadro("COMPROMISOS", "Dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM.")
-    else:
-        crear_seccion_cuadro("OBJETIVO DEL DOCUMENTO", datos_doc['objetivo'])
-        crear_seccion_cuadro("ALCANCE", "Aplica para todos los empleados, contratistas y proveedores (incluyendo terceros tecnológicos) de SERGEM Mensajería S.A.S. a nivel nacional.")
-        crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", datos_doc['reglas'])
-        crear_seccion_cuadro("COMPROMISOS", datos_doc['compromisos'])
-
-    p_firma = doc.add_paragraph("\n\nFIRMA RESPONSABLE / APROBADOR: ___________________________________")
+    # FIRMA DINÁMICA SEGÚN TIPO DE DOCUMENTO
+    p_firma = doc.add_paragraph(f"\n\n{datos_doc['tipo_firma']}: ___________________________________")
     p_firma.bold = True
     
     output = io.BytesIO()
     doc.save(output)
     return output.getvalue()
 
-
+# -----------------------------------------------------------------------------
+# 4. ESTADO DE SESIÓN E INTERFAZ STREAMLIT
+# -----------------------------------------------------------------------------
 df_archivos = obtener_archivos_drive()
-if 'visor_id' not in st.session_state: st.session_state.visor_id = None
-if 'visor_nombre' not in st.session_state: st.session_state.visor_nombre = None
 
-# -----------------------------------------------------------------------------
-# 3. BARRA LATERAL FIJA
-# -----------------------------------------------------------------------------
+if 'visor_id' not in st.session_state: 
+    st.session_state.visor_id = None
+if 'visor_nombre' not in st.session_state: 
+    st.session_state.visor_nombre = None
+
 st.sidebar.markdown('### 🗂️ Módulos de Evaluación')
 opciones = [
     "🏠 Inicio y Sincronización", 
-    "📁 Explorador Documental Completo",
-    "📊 Novedades Auditoría Pasada",
+    "📁 Explorador Documental Completo", 
+    "📊 Novedades Auditoría Pasada", 
     "🛠️ Preparador de Auditoría Automático"
 ]
 seleccion = st.sidebar.radio("Seleccione la vista:", opciones)
 
-# -----------------------------------------------------------------------------
-# 4. LÓGICA DE VISTAS (INICIO Y EXPLORADOR)
-# -----------------------------------------------------------------------------
+# --- VISTA 1: INICIO ---
 if seleccion == "🏠 Inicio y Sincronización":
     st.markdown("""
         <div class="card-custom">
             <div class="card-header-custom">Estado del Sistema SGSI</div>
-            <p>Bienvenido al portal oficial de auditoría de SERGEM Mensajería S.A.S. 
-            El sistema se encuentra sincronizado con el repositorio documental en tiempo real.</p>
+            <p>Bienvenido al portal oficial de auditoría de SERGEM Mensajería S.A.S. El sistema se encuentra sincronizado con el repositorio documental en tiempo real.</p>
         </div>
     """, unsafe_allow_html=True)
     if st.button("🔄 Forzar Sincronización con Drive"):
@@ -302,6 +304,7 @@ if seleccion == "🏠 Inicio y Sincronización":
         st.success("✅ Datos sincronizados correctamente.")
     st.info(f"Total de archivos y carpetas detectados en la nube: **{len(df_archivos)}**")
 
+# --- VISTA 2: EXPLORADOR DOCUMENTAL ---
 elif seleccion == "📁 Explorador Documental Completo":
     st.markdown("""
         <div class="card-custom">
@@ -309,6 +312,7 @@ elif seleccion == "📁 Explorador Documental Completo":
             <p>Seleccione una carpeta en el panel izquierdo y haga clic sobre cualquier documento para visualizarlo de inmediato.</p>
         </div>
     """, unsafe_allow_html=True)
+    
     if not df_archivos.empty:
         col_explorer, col_viewer = st.columns([1, 2])
         with col_explorer:
@@ -328,12 +332,8 @@ elif seleccion == "📁 Explorador Documental Completo":
                 mostrar_visor_archivo(st.session_state.visor_id, st.session_state.visor_nombre)
             else:
                 st.info("👈 Seleccione un documento en el panel izquierdo para previsualizarlo en pantalla.")
-    else:
-        st.error("No se encontraron archivos en la sincronización.")
 
-# -----------------------------------------------------------------------------
-# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA 
-# -----------------------------------------------------------------------------
+# --- VISTA 3: NOVEDADES AUDITORÍA ---
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
         <div class="card-custom">
@@ -346,11 +346,13 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
     def cargar_matriz_observaciones(df_archivos_nube):
         if df_archivos_nube.empty:
             return pd.DataFrame(), None
+            
         mask = df_archivos_nube['nombre'].str.contains("Matriz de Observaciones", case=False, na=False)
         archivos_matriz = df_archivos_nube[mask & (df_archivos_nube['tipo'] == 'Archivo')]
+        
         if archivos_matriz.empty:
-            st.error("No se encontró ningún archivo de matriz de observaciones en la nube.")
             return pd.DataFrame(), None 
+            
         candidato = archivos_matriz.iloc[0]
         file_id = candidato['id']
         url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
@@ -369,24 +371,25 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
             if col_observacion:
                 for idx, row in df.iterrows():
                     obs = str(row.get(col_observacion)).strip()
-                    if pd.isna(row.get(col_observacion)) or obs.upper() in ['', 'NAN', 'OBSERVACIÓN', 'OBSERVADA']:
+                    if pd.isna(row.get(col_observacion)) or obs.upper() in ['', 'NAN', 'OBSERVACIÓN', 'OBSERVADA']: 
                         continue
+                        
                     estado = 'SIN ESTADO'
-                    if col_estado and pd.notna(row.get(col_estado)):
+                    if col_estado and pd.notna(row.get(col_estado)): 
                         estado = str(row[col_estado]).upper()
                     elif 'SUBSANADO' in df.columns:
                         idx_subs = df.columns.get_loc('SUBSANADO')
                         val_si = str(row.iloc[idx_subs]).strip().upper()
                         val_no = str(row.iloc[idx_subs + 1]).strip().upper() if (idx_subs + 1) < len(df.columns) else ''
-                        if val_si == 'X':
+                        if val_si == 'X': 
                             estado = 'SUBSANADA'
-                        elif val_no == 'X':
+                        elif val_no == 'X': 
                             estado = 'NO SUBSANADA'
 
                     actividad = 'Sin actividad registrada'
                     if col_subsanacion and pd.notna(row.get(col_subsanacion)):
                         val_act = str(row[col_subsanacion]).strip()
-                        if val_act.upper() not in ['', 'NAN']:
+                        if val_act.upper() not in ['', 'NAN']: 
                             actividad = val_act
 
                     datos_limpios.append({
@@ -396,18 +399,14 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                         'Estado': estado,
                         'Subsanación (Actividad)': actividad
                     })
-            df_clean = pd.DataFrame(datos_limpios)
-            return df_clean, file_id 
+            return pd.DataFrame(datos_limpios), file_id 
         except Exception as e:
-            st.error(f"Error al procesar el archivo: {e}")
             return pd.DataFrame(), None
 
     df_nov, matrix_file_id = cargar_matriz_observaciones(df_archivos)
 
     if not df_nov.empty:
         conteo_estados = df_nov['Estado'].value_counts()
-        
-        st.markdown("### 📈 Resumen General de Hallazgos")
         col_metric, col_chart = st.columns([1, 2])
         
         with col_metric:
@@ -420,26 +419,24 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                 values=conteo_estados.values, 
                 names=conteo_estados.index, 
                 hole=0.4, 
-                color=conteo_estados.index,
+                color=conteo_estados.index, 
                 color_discrete_map={'SUBSANADA':'#2ecc71', 'NO SUBSANADA':'#e74c3c', 'SIN ESTADO':'#f1c40f'}
             )
             fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=300)
             st.plotly_chart(fig, use_container_width=True)
 
-        st.divider()
-
         if matrix_file_id:
             with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
-                st.info("Vista en vivo del documento fuente alojado en Google Drive.")
                 url_visor = f"https://drive.google.com/file/d/{matrix_file_id}/preview"
                 st.markdown(f'<iframe class="pdf-frame" src="{url_visor}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
             
-            st.divider()
-
         st.markdown("### 🔍 Detalle Interactivo de Observaciones")
-        
         filtro = st.selectbox("Filtrar estado de la novedad:", ["Todos los Estados"] + list(df_nov['Estado'].unique()))
-        df_mostrar = df_nov if filtro == "Todos los Estados" else df_nov[df_nov['Estado'] == filtro]
+        
+        if filtro == "Todos los Estados":
+            df_mostrar = df_nov 
+        else:
+            df_mostrar = df_nov[df_nov['Estado'] == filtro]
 
         for _, row in df_mostrar.iterrows():
             emoji = "✅" if row['Estado'] == "SUBSANADA" else "⚠️" if row['Estado'] == "NO SUBSANADA" else "🔒"
@@ -447,15 +444,12 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                 st.markdown("**📌 Observación Original:**")
                 st.info(row['Observación'])
                 st.markdown("**🛠️ Actividad Realizada / Cómo fue subsanado:**")
-                
                 if pd.notna(row['Subsanación (Actividad)']) and str(row['Subsanación (Actividad)']).strip() != "":
                     st.success(row['Subsanación (Actividad)'])
                 else:
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
 
-# -----------------------------------------------------------------------------
-# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA Y GENERADOR DE WORD
-# -----------------------------------------------------------------------------
+# --- VISTA 4: PREPARADOR AUTOMÁTICO ---
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
     st.markdown("""
         <div class="card-custom">
@@ -499,12 +493,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         }
 
         archivos_encontrados = []
-        archivos_validos = [] 
-        ids_procesados = set() 
-        inventario_id = None 
+        archivos_validos = []
+        ids_procesados = set()
+        inventario_id = None
         lista_faltantes = []
-
-        st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
         
         for req, keywords in requisitos.items():
             mask = df_archivos_base['nombre'].str.upper().str.contains('|'.join(keywords))
@@ -512,17 +504,19 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
-                estado = "✅ Encontrado"
                 
-                if "INVENTARIO" in req.upper() and "TI" in req.upper() and candidato['nombre'].endswith(('.xls', '.xlsx')):
+                if "INVENTARIO" in req.upper() and "TI" in req.upper() and candidato['nombre'].endswith(('.xls', '.xlsx')): 
                     estado = "⚙️ Encontrado (Editable)"
                     inventario_id = candidato['id']
-
+                else:
+                    estado = "✅ Encontrado"
+                
                 archivos_encontrados.append({
                     "Requisito": req, 
                     "Estado": estado, 
                     "Archivo Base": candidato['nombre']
                 })
+                
                 if candidato['id'] not in ids_procesados:
                     archivos_validos.append({"nombre": candidato['nombre'], "id": candidato['id']})
                     ids_procesados.add(candidato['id'])
@@ -535,7 +529,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 lista_faltantes.append(req)
 
         df_analisis = pd.DataFrame(archivos_encontrados)
-        
         filtro_req = st.radio(
             "🔍 Filtrar estado de los documentos:", 
             ["Mostrar Todos", "❌ Solo Faltantes", "✅ Solo Encontrados"], 
@@ -553,11 +546,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         st.divider()
 
-        # ---------------------------------------------------------
-        # ZONA DE ACCIÓN: GENERADOR DE WORD Y EMPAQUE
-        # ---------------------------------------------------------
         col_qms, col_auto = st.columns(2)
-        
         with col_qms:
             st.markdown("### 📝 Motor Generador de Documentos QMS")
             st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM (Versión 2024), listo para firmar.")
@@ -570,10 +559,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.docx"
                     
                     st.download_button(
-                        label="⬇️ Descargar Documento Listo para Firmar",
-                        data=archivo_word,
-                        file_name=nombre_descarga,
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        label="⬇️ Descargar Documento Listo para Firmar", 
+                        data=archivo_word, 
+                        file_name=nombre_descarga, 
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
                         type="secondary"
                     )
             else:
@@ -589,9 +578,9 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                         excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
                         if excel_modificado:
                             st.download_button(
-                                label="⬇️ Guardar Excel Actualizado",
-                                data=excel_modificado,
-                                file_name="Inventario_de_computadores_Actualizado_2026.xlsx",
+                                label="⬇️ Guardar Excel Actualizado", 
+                                data=excel_modificado, 
+                                file_name="Inventario_de_computadores_Actualizado_2026.xlsx", 
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                             )
                         else:
@@ -611,18 +600,18 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     try:
                         res_post = requests.post(URL_API_DRIVE, json=payload)
                         respuesta = res_post.json()
-                        if respuesta.get("status") == "success":
+                        if respuesta.get("status") == "success": 
                             resultados_finales.extend(respuesta.get("copiados", []))
-                        else:
-                            resultados_finales.append(f"❌ Omitido (Bloqueo severo del dueño o conexión): {doc['nombre']}")
+                        else: 
+                            resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
                     except Exception as e:
-                        resultados_finales.append(f"❌ Omitido (Archivo inaccesible o restringido): {doc['nombre']}")
+                        resultados_finales.append(f"❌ Omitido (Archivo inaccesible): {doc['nombre']}")
                         
                     barra_progreso.progress((i + 1) / len(archivos_validos))
-                
+                    
                 texto_estado.empty()
                 st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
                 with st.expander("Ver detalle de operaciones", expanded=True):
-                    for f in resultados_finales:
+                    for f in resultados_finales: 
                         st.write(f"- {f}")
                 st.cache_data.clear()
