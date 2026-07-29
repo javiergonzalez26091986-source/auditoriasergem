@@ -236,7 +236,6 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
     if not df_nov.empty:
         conteo_estados = df_nov['Estado'].value_counts()
         
-        # Gráfico Plotly Mantenido
         st.markdown("### 📈 Resumen General de Hallazgos")
         col_metric, col_chart = st.columns([1, 2])
         
@@ -258,7 +257,15 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
 
         st.divider()
 
-        # Interfaz clásica restaurada (Expanders y Scroll)
+        # AQUÍ SE MOVIO EL VISOR DEL ARCHIVO ORIGINAL AL PRINCIPIO
+        if matrix_file_id:
+            with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
+                st.info("Vista en vivo del documento fuente alojado en Google Drive.")
+                url_visor = f"https://drive.google.com/file/d/{matrix_file_id}/preview"
+                st.markdown(f'<iframe class="pdf-frame" src="{url_visor}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
+            
+            st.divider()
+
         st.markdown("### 🔍 Detalle Interactivo de Observaciones")
         
         filtro = st.selectbox("Filtrar estado de la novedad:", ["Todos los Estados"] + list(df_nov['Estado'].unique()))
@@ -275,13 +282,6 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                     st.success(row['Subsanación (Actividad)'])
                 else:
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
-
-        if matrix_file_id:
-            st.divider()
-            with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
-                st.info("Vista en vivo del documento fuente alojado en Google Drive.")
-                url_visor = f"https://drive.google.com/file/d/{matrix_file_id}/preview"
-                st.markdown(f'<iframe class="pdf-frame" src="{url_visor}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA
@@ -343,7 +343,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 candidato = coincidencias.iloc[0]
                 estado = "✅ Encontrado"
                 
-                # Identificar si es el inventario de TI para habilitar la edición de fecha
                 if "INVENTARIO" in req.upper() and "TI" in req.upper() and candidato['nombre'].endswith(('.xls', '.xlsx')):
                     estado = "⚙️ Encontrado (Editable)"
                     inventario_id = candidato['id']
@@ -365,7 +364,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         df_analisis = pd.DataFrame(archivos_encontrados)
         
-        # Filtro clásico restaurado (Botones horizontales)
         filtro_req = st.radio(
             "🔍 Filtrar estado de los documentos:", 
             ["Mostrar Todos", "❌ Solo Faltantes", "✅ Solo Encontrados"], 
@@ -379,7 +377,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         else:
             df_mostrar = df_analisis
             
-        # Visualización clásica restaurada (Scroll libre)
         st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
 
         st.divider()
@@ -396,7 +393,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         with col_auto:
             st.markdown("### 🚀 Acción de Automatización y Empaque")
             
-            # Edición Automática de Excel usando OpenPyXL
             if inventario_id:
                 st.warning("Se detectó el 'Inventario de TI' en formato Excel. Puedes descargar el archivo con la fecha actualizada internamente a 2026 para validarlo, antes de generar las copias finales.")
                 if st.button("🪄 Descargar Inventario Actualizado (2026)"):
