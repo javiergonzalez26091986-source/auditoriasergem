@@ -616,7 +616,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         col_qms, col_auto = st.columns(2)
         with col_qms:
-            st.markdown("### 📝 Motor Generador de Documentos QMS")
+            st.markdown("### 📝 Motor Buscador de Documentos QMS")
             st.info("Se buscarán los formatos en la base de datos de la organización, y se podrán descargar de manera local para luego cargar en el Drive.")
             
             if lista_faltantes:
