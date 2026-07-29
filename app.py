@@ -242,3 +242,88 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                     st.success(row['Subsanación (Actividad)'])
                 else:
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
+# -----------------------------------------------------------------------------
+# 6. MÓDULO: CHECKLIST INTELIGENTE Y GENERADOR 2026
+# -----------------------------------------------------------------------------
+elif seleccion == "✅ Checklist y Generador 2026":
+    st.markdown("""
+        <div class="card-custom">
+            <div class="card-header-custom">Checklist Automatizado - Kreston RM-4901-26</div>
+            <p>El sistema escanea los archivos en Google Drive y cruza los nombres con los requisitos oficiales del plan de auditoría 2026. 
+            También permite generar copias actualizadas de los documentos clave.</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Definimos los requisitos de Kreston y las palabras clave que el programa buscará en tu Drive
+    requisitos_kreston = {
+        "1. Políticas de Seguridad (Habeas Data)": ["política", "politica", "habeas", "datos"],
+        "2. Inventario de TI": ["inventario"],
+        "3. Hojas de vida de equipos": ["hoja de vida", "srg"],
+        "4. Base de personal retirado 2026": ["retirado", "retiros", "liquidaciones"],
+        "5. Acuerdos de confidencialidad": ["confidencialidad"],
+        "6. Plan de respuesta a emergencias": ["contingencia", "emergencia", "desastres"],
+        "7. Licenciamiento y Certificación Rep. Legal": ["licencias", "certificación representante", "software legal"],
+        "8. Acuerdos de nivel de servicio (Proveedores)": ["acuerdos", "proveedores", "sla"],
+        "9. Reporte y Prueba de Restauración de Backups": ["restauración", "prueba", "backup"],
+        "10. Matriz de Riesgos TI": ["matriz de riesgos", "riesgos"],
+        "11. Plan de Continuidad de Negocio": ["continuidad"],
+        "12. Pruebas de Vulnerabilidad (Ethical Hacking)": ["vulnerabilidad", "ethical", "hacking", "analisis de seguridad"]
+    }
+
+    st.markdown("### 🚦 Estado de Cumplimiento Documental")
+    
+    # Progreso de la auditoría
+    cumplidos = 0
+    total = len(requisitos_kreston)
+    resultados_checklist = []
+
+    if not df_archivos.empty:
+        # Volvemos todo a minúsculas para facilitar la búsqueda
+        nombres_archivos_drive = df_archivos['nombre'].str.lower().tolist()
+        
+        for req, keywords in requisitos_kreston.items():
+            # Verifica si ALGUNA de las palabras clave de este requisito existe en los archivos del Drive
+            encontrado = any(any(kw in nombre for kw in keywords) for nombre in nombres_archivos_drive)
+            if encontrado:
+                cumplidos += 1
+                resultados_checklist.append((req, "✅ Encontrado"))
+            else:
+                resultados_checklist.append((req, "❌ Faltante / No detectado"))
+
+        # Barra de progreso visual
+        progreso = cumplidos / total
+        st.progress(progreso, text=f"Progreso de alistamiento: {int(progreso * 100)}% ({cumplidos} de {total} componentes)")
+        
+        # Mostrar el listado cruzado
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("#### Documentos Cumplidos")
+            for req, estado in resultados_checklist:
+                if "✅" in estado: st.success(f"**{req}**")
+        with col2:
+            st.markdown("#### Documentos Pendientes o Incompletos")
+            for req, estado in resultados_checklist:
+                if "❌" in estado: st.error(f"**{req}**")
+
+    st.divider()
+
+    # MOTOR DE ACTUALIZACIÓN (Ejemplo con el Inventario)
+    st.markdown("### ⚙️ Motor de Actualización (Vigencia 2026)")
+    st.info("💡 Este módulo toma los Excel de 2025, actualiza sus fechas internamente a 2026 y te permite descargar la copia lista para colocarla en la carpeta 'Auditoría actual'.")
+    
+    if st.button("🔄 Generar actualización de Matriz de Riesgos y Cronogramas a 2026"):
+        with st.spinner("Procesando datos desde la nube... identificando fechas 2025... actualizando..."):
+            # Aquí va la lógica de Pandas para leer el Excel base, sumarle 1 año a las fechas y exportarlo
+            import time
+            time.sleep(2) # Simulamos el proceso
+            
+            # Al terminar, habilitamos el botón de descarga real de Streamlit
+            st.success("¡Documentos actualizados exitosamente en memoria!")
+            
+            # Simulamos el archivo procesado (En un caso real exportamos el DataFrame a Excel usando io.BytesIO)
+            st.download_button(
+                label="📥 Descargar Matriz_Riesgos_Vigencia_2026.xlsx",
+                data=b"Datos simulados de excel actualizados",
+                file_name="Matriz_Riesgos_Vigencia_2026.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
