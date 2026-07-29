@@ -620,7 +620,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             st.info("Se buscarán los formatos en la base de datos de la organización, y se podrán descargar de manera local para luego cargar en el Drive.")
             
             if lista_faltantes:
-                req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
+                req_selec = st.selectbox("Seleccione el documento a buscar:", lista_faltantes)
                 
                 if st.button(f"🪄 Buscar documento PDF Oficial: {req_selec}"):
                     with st.spinner("Extrayendo PDF..."):
