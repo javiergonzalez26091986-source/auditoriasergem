@@ -310,9 +310,10 @@ def generar_documento_word(requisito):
     p_ver.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_ver.add_run("Versión No.1").bold = True
 
+    # FECHA DE MAYO DE 2026 APLICADA AQUÍ
     p_fec = table.cell(1, 3).paragraphs[0]
     p_fec.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_fec.add_run("29/07/2026").bold = True
+    p_fec.add_run("15/05/2026").bold = True
 
     doc.add_paragraph() 
 
@@ -358,10 +359,10 @@ def generar_documento_word(requisito):
             run = p.add_run(text)
             run.bold = True
             
-        # Contenido de la firma con espacio para firmar físicamente
-        table_firmas.cell(1, 0).text = "\n\n\nNombre: Anyelo Rojas Quinayás\nCargo: Coordinador de Calidad"
-        table_firmas.cell(1, 1).text = "\n\n\nNombre: Ernesto Gutiérrez C.\nCargo: Director de Proyectos y Tecnología"
-        table_firmas.cell(1, 2).text = "\n\n\nNombre: Giovanny Berrio Realpe\nCargo: Gerente"
+        # Contenido de la firma (sin espacio físico según indicación)
+        table_firmas.cell(1, 0).text = "Nombre: Yesenia Beltrán\nCargo: Directora Administrativa"
+        table_firmas.cell(1, 1).text = "Nombre: Yesenia Beltrán\nCargo: Directora Administrativa"
+        table_firmas.cell(1, 2).text = "Nombre: José Reinel Torres\nCargo: Gerente"
 
     else:
         # Línea de firma simple para actas, capacitaciones y contratos
