@@ -100,7 +100,76 @@ def actualizar_fecha_inventario_excel(file_id):
         pass
     return None
 
+# --- MOTOR DE CONOCIMIENTO QMS ---
+def obtener_datos_qms(requisito):
+    req = requisito.lower()
+    
+    if "emergencia" in req or "pérdida" in req:
+        return {
+            "codigo": "PR-07-015",
+            "objetivo": "Establecer un plan de acción inmediato para mitigar, responder y recuperar la información ante incidentes críticos, ciberataques o desastres físicos.",
+            "reglas": "- Aislar inmediatamente los equipos afectados de la red corporativa.\n- Activar el protocolo de contingencia notificando al Comité de Crisis.\n- Contactar a SOLINUX para iniciar la restauración de copias de seguridad en la nube.\n- Registrar el incidente en la bitácora de seguridad.",
+            "compromisos": "Restaurar la operatividad de los sistemas críticos en un tiempo máximo de 4 horas (RTO) y garantizar una pérdida de datos no mayor a 24 horas (RPO)."
+        }
+    elif "retirado" in req or "base de datos" in req:
+        return {
+            "codigo": "FO-08-020",
+            "objetivo": "Mantener un registro actualizado y controlado del personal retirado para inhabilitar oportunamente sus accesos lógicos y físicos al SGSI.",
+            "reglas": "- Gestión Humana debe notificar el retiro del personal el mismo día de la novedad.\n- El área de TI inhabilitará las cuentas de correo, ERP y VPN en un plazo máximo de 24 horas.\n- Es obligatoria la devolución del carnet, tokens y equipos asignados antes de la liquidación.",
+            "compromisos": "Asegurar al 100% que ningún ex-colaborador o tercero inactivo mantenga privilegios de acceso a la información confidencial de SERGEM."
+        }
+    elif "contraseña" in req or "clave" in req:
+        return {
+            "codigo": "PO-07-004",
+            "objetivo": "Definir los lineamientos robustos para la creación, protección y rotación de contraseñas de los sistemas de información de SERGEM.",
+            "reglas": "- Las contraseñas deben tener una longitud mínima de 8 caracteres alfanuméricos (incluyendo mayúsculas y símbolos).\n- Es de carácter obligatorio el cambio de contraseña cada 90 días.\n- Prohibido compartir credenciales, anotarlas en medios físicos visibles o usar contraseñas personales.",
+            "compromisos": "Prevenir el acceso no autorizado a los sistemas mediante una autenticación robusta y auditable."
+        }
+    elif "móvil" in req or "dispositivo" in req:
+        return {
+            "codigo": "PO-07-008",
+            "objetivo": "Establecer las normas de seguridad para el uso de dispositivos móviles (Smartphones, Tablets, Laptops) que procesan información de la compañía.",
+            "reglas": "- Está prohibido almacenar información confidencial o bases de datos de clientes en dispositivos personales no autorizados (BYOD).\n- Todo equipo móvil corporativo debe contar con cifrado de disco, PIN de bloqueo y antivirus actualizado.\n- En caso de pérdida o robo, se debe reportar inmediatamente para el borrado remoto.",
+            "compromisos": "Garantizar la protección de los datos corporativos fuera del perímetro físico de las instalaciones de SERGEM."
+        }
+    elif "incidentes" in req:
+        return {
+            "codigo": "PR-07-011",
+            "objetivo": "Estandarizar el procedimiento para la identificación, clasificación, reporte y resolución de incidentes de seguridad de la información.",
+            "reglas": "- Todo usuario tiene la obligación de reportar cualquier anomalía (correos sospechosos, lentitud extrema, pérdida de datos) a la Mesa de Ayuda.\n- TI clasificará el incidente según su impacto (Alto, Medio, Bajo) y documentará la causa raíz.\n- Se deben aplicar acciones correctivas y preventivas (CAPA) para evitar la recurrencia.",
+            "compromisos": "Mantener un registro auditable del 100% de los incidentes y reducir los tiempos de resolución técnica."
+        }
+    elif "disciplinario" in req:
+        return {
+            "codigo": "PO-03-002",
+            "objetivo": "Establecer las sanciones aplicables ante el incumplimiento de las políticas del Sistema de Gestión de Seguridad de la Información (SGSI).",
+            "reglas": "- El uso indebido de los activos de TI será considerado una falta grave al Reglamento Interno de Trabajo.\n- Las infracciones serán evaluadas por el Comité de Convivencia y Gerencia para determinar suspensiones o terminación de contrato con justa causa.\n- Las violaciones a la Ley de Habeas Data (Ley 1581) serán reportadas a las autoridades competentes.",
+            "compromisos": "Fomentar una cultura de cumplimiento y responsabilidad legal frente al manejo de la información."
+        }
+    elif "copia" in req or "restauración" in req or "backup" in req:
+        return {
+            "codigo": "PR-07-021",
+            "objetivo": "Garantizar la disponibilidad e integridad de la información mediante la realización de copias de seguridad en la nube y pruebas de restauración.",
+            "reglas": "- SERGEM delega la administración técnica de los backups en la nube a su proveedor certificado SOLINUX.\n- Se ejecutarán copias de seguridad incrementales diarias y completas semanales.\n- El área de TI de SERGEM coordinará con SOLINUX la ejecución de pruebas de restauración semestrales, documentando los resultados en actas formales.",
+            "compromisos": "Asegurar la continuidad del negocio y verificar la efectividad técnica del proveedor en la recuperación de datos."
+        }
+    elif "actualización" in req or "recursos" in req:
+        return {
+            "codigo": "PL-07-005",
+            "objetivo": "Planificar la renovación y actualización del hardware y software de la compañía para mitigar riesgos por obsolescencia tecnológica.",
+            "reglas": "- Se realizará una revisión anual del Inventario de TI para identificar equipos con más de 5 años de antigüedad.\n- Los sistemas operativos y antivirus deben mantenerse en su última versión estable soportada por el fabricante.\n- Las adquisiciones de nuevo hardware deben estar alineadas al presupuesto anual aprobado por Gerencia.",
+            "compromisos": "Proveer a los colaboradores herramientas tecnológicas seguras, modernas y eficientes."
+        }
+    else:
+        return {
+            "codigo": "SG-07-099",
+            "objetivo": f"Establecer los lineamientos y controles normativos aplicables a: {requisito.title()}.",
+            "reglas": "- El personal debe cumplir estrictamente con los controles definidos por la norma ISO 27001.\n- La ejecución de las actividades debe documentarse en los formatos oficiales del QMS.\n- El incumplimiento generará las respectivas medidas correctivas.",
+            "compromisos": "Garantizar la mejora continua, la confidencialidad y el resguardo de la información de la compañía."
+        }
+
 def generar_documento_word(requisito):
+    datos_doc = obtener_datos_qms(requisito)
     doc = Document()
     
     # Márgenes: Quedan 6.9 pulgadas exactas de área de trabajo
@@ -110,13 +179,12 @@ def generar_documento_word(requisito):
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
 
-    # NUEVO ENCABEZADO 2024 (Alineado)
+    # ENCABEZADO 2024 (Alineado)
     table = doc.add_table(rows=2, cols=5)
     table.style = 'Table Grid'
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
     
-    # Reparto estricto para sumar 6.9 pulgadas exactas
     widths = [Inches(1.4), Inches(1.4), Inches(1.3), Inches(1.4), Inches(1.4)]
     for row in table.rows:
         for idx, width in enumerate(widths):
@@ -134,7 +202,6 @@ def generar_documento_word(requisito):
     p_logo_R = cell_logo_R.paragraphs[0]
     p_logo_R.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Incrustar imágenes
     for p in [p_logo_L, p_logo_R]:
         try:
             if os.path.exists("sergemLogo.png"):
@@ -144,19 +211,19 @@ def generar_documento_word(requisito):
         except:
             p.add_run("LOGO").bold = True
 
-    # Título Central 
+    # Título Central Dinámico
     cell_title = table.cell(0, 1)
     cell_title.merge(table.cell(0, 3))
     p_title = cell_title.paragraphs[0]
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_title = p_title.add_run(requisito.upper())
     run_title.bold = True
-    run_title.font.size = Pt(11)
+    run_title.font.size = Pt(10)
 
-    # Metadatos 
+    # Metadatos Dinámicos
     p_cod = table.cell(1, 1).paragraphs[0]
     p_cod.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    p_cod.add_run("Código: PO-07-014").bold = True
+    p_cod.add_run(f"Código: {datos_doc['codigo']}").bold = True
 
     p_ver = table.cell(1, 2).paragraphs[0]
     p_ver.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -174,8 +241,6 @@ def generar_documento_word(requisito):
         t.style = 'Table Grid'
         t.alignment = WD_TABLE_ALIGNMENT.CENTER
         t.autofit = False
-        
-        # Forzar el ancho idéntico al encabezado
         for row in t.rows:
             row.cells[0].width = Inches(6.9)
         
@@ -188,21 +253,14 @@ def generar_documento_word(requisito):
         doc.add_paragraph() 
 
     if "capacitaci" in requisito.lower() or "planillas" in requisito.lower():
-        crear_seccion_cuadro("AGENDA DE LA REUNIÓN", "Se programa personal administrativo a nivel nacional: Cali, Barraquilla, Bogotá, Cartagena, Ibagué, Santa Marta para validación de: " + requisito)
+        crear_seccion_cuadro("AGENDA DE LA REUNIÓN", "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta para validación de: " + requisito)
         crear_seccion_cuadro("DESARROLLO DE LA REUNIÓN", "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.")
-        crear_seccion_cuadro("COMPROMISOS", "Dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos y activos a través de los procedimientos de SERGEM.")
+        crear_seccion_cuadro("COMPROMISOS", "Dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM.")
     else:
-        crear_seccion_cuadro("OBJETIVO DEL DOCUMENTO", f"Establecer los lineamientos requeridos para dar cumplimiento normativo a: {requisito}.")
-        crear_seccion_cuadro("ALCANCE", "Aplica para todos los empleados, contratistas y proveedores de SERGEM Mensajería S.A.S. a nivel nacional.")
-        
-        texto_politica = "- El personal debe cumplir estrictamente con los controles.\n- El incumplimiento generará medidas disciplinarias."
-        if "copias" in requisito.lower() or "restauración" in requisito.lower():
-            texto_politica = "- SERGEM delega la gestión de copias de seguridad en la nube al proveedor SOLINUX.\n- Se realizarán pruebas de restauración periódicas avaladas por el proveedor."
-        elif "contraseñas" in requisito.lower():
-            texto_politica = "- Las contraseñas deben ser alfanuméricas con una longitud mínima de 8 caracteres.\n- Se exige cambio obligatorio cada 90 días."
-            
-        crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", texto_politica)
-        crear_seccion_cuadro("COMPROMISOS", "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001.")
+        crear_seccion_cuadro("OBJETIVO DEL DOCUMENTO", datos_doc['objetivo'])
+        crear_seccion_cuadro("ALCANCE", "Aplica para todos los empleados, contratistas y proveedores (incluyendo terceros tecnológicos) de SERGEM Mensajería S.A.S. a nivel nacional.")
+        crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", datos_doc['reglas'])
+        crear_seccion_cuadro("COMPROMISOS", datos_doc['compromisos'])
 
     p_firma = doc.add_paragraph("\n\nFIRMA RESPONSABLE / APROBADOR: ___________________________________")
     p_firma.bold = True
