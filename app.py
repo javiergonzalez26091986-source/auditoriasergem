@@ -101,71 +101,96 @@ def actualizar_fecha_inventario_excel(file_id):
 
 def generar_documento_word(requisito):
     doc = Document()
-    sections = doc.sections
-    for section in sections:
-        section.top_margin = Inches(1)
-        section.bottom_margin = Inches(1)
-        section.left_margin = Inches(1)
-        section.right_margin = Inches(1)
+    
+    # Márgenes de documento oficial
+    for section in doc.sections:
+        section.top_margin = Inches(0.5)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.8)
+        section.right_margin = Inches(0.8)
 
-    table = doc.add_table(rows=1, cols=2)
+    # ENCABEZADO: Estructura exacta de 3x3 para replicar el PDF oficial
+    table = doc.add_table(rows=3, cols=3)
     table.style = 'Table Grid'
-    cell_info = table.cell(0, 1)
     
-    p = cell_info.paragraphs[0]
-    p.add_run("SERGEM Mensajería S.A.S.\n").bold = True
-    p.add_run(f"{requisito.upper()}\n").bold = True
-    p.add_run("CÓDIGO: SGSI-2026-001\nVersión No. 1\nFecha: 29-jul-2026")
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # Ajuste de columnas
+    table.columns[0].width = Inches(1.5)
+    table.columns[1].width = Inches(3.5)
+    table.columns[2].width = Inches(1.5)
+
+    # Celda del Logo (fusionar verticalmente)
+    cell_logo = table.cell(0, 0)
+    cell_logo.merge(table.cell(2, 0))
+    p_logo = cell_logo.paragraphs[0]
+    p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    try:
+        if os.path.exists("sergemLogo.png"):
+            p_logo.add_run().add_picture("sergemLogo.png", width=Inches(1.2))
+        else:
+            p_logo.add_run("LOGO\nSERGEM").bold = True
+    except:
+        p_logo.add_run("LOGO\nSERGEM").bold = True
+
+    # Celda Central (Títulos)
+    cell_title_top = table.cell(0, 1)
+    cell_title_top.merge(table.cell(1, 1))
+    p_title1 = cell_title_top.paragraphs[0]
+    p_title1.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title1.add_run("FORMATO SGSI - SERGEM\n").bold = True
     
-    doc.add_paragraph()
-    
-    def add_section_header(text):
-        p = doc.add_paragraph()
-        run = p.add_run(text)
-        run.bold = True
-        run.font.size = Pt(12)
+    cell_title_bot = table.cell(2, 1)
+    p_title2 = cell_title_bot.paragraphs[0]
+    p_title2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title2.add_run(requisito.upper()).bold = True
+
+    # Celda Derecha (Metadatos)
+    table.cell(0, 2).text = "Código: SG-08-001"
+    table.cell(1, 2).text = "Fecha: 29/07/2026"
+    table.cell(2, 2).text = "Versión: 1"
+
+    doc.add_paragraph() # Espacio
+
+    # FUNCIÓN INTERNA PARA CREAR SECCIONES TIPO "ACTA" (Cuadros)
+    def crear_seccion_cuadro(titulo, contenido):
+        t = doc.add_table(rows=2, cols=1)
+        t.style = 'Table Grid'
         
-    add_section_header("1. OBJETIVO")
-    doc.add_paragraph(f"Establecer los lineamientos y directrices para el cumplimiento de {requisito.lower()} en SERGEM Mensajería S.A.S., garantizando la confidencialidad, integridad y disponibilidad de la información.")
+        # Título de la sección
+        p_tit = t.cell(0, 0).paragraphs[0]
+        p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p_tit.add_run(titulo)
+        run.bold = True
+        
+        # Contenido de la sección
+        t.cell(1, 0).text = contenido
+        doc.add_paragraph() # Espacio separador
 
-    add_section_header("2. ALCANCE")
-    doc.add_paragraph("Este documento aplica para todos los empleados, contratistas y proveedores de SERGEM Mensajería S.A.S. a nivel nacional que tengan acceso a los sistemas de información.")
-
-    add_section_header("3. DEFINICIONES")
-    doc.add_paragraph("• SGSI: Sistema de Gestión de Seguridad de la Información.\n• Activo de información: Cualquier elemento que tenga valor para la organización.")
-
-    add_section_header("4. REGLAS GENERALES / POLÍTICAS")
-    if "copias" in requisito.lower() or "restauración" in requisito.lower():
-        doc.add_paragraph("• SERGEM delega la administración técnica de copias de seguridad en la nube al proveedor SOLINUX.\n• Se realizarán pruebas de restauración semestrales certificadas por SOLINUX para validar la integridad.")
-    elif "contraseñas" in requisito.lower():
-        doc.add_paragraph("• Las contraseñas deben tener una longitud mínima de 8 caracteres alfanuméricos.\n• Es obligatorio el cambio de contraseña cada 90 días.")
-    elif "incidentes" in requisito.lower():
-        doc.add_paragraph("• Todo incidente de seguridad debe ser reportado inmediatamente al área de Sistemas.\n• Se mantendrá un registro de incidentes para aplicar acciones correctivas.")
+    # LÓGICA DE CONTENIDO SEGÚN REQUISITO
+    if "capacitaci" in requisito.lower() or "planillas" in requisito.lower():
+        crear_seccion_cuadro("AGENDA DE LA REUNIÓN", "Se programa personal administrativo a nivel nacional: Cali, Barraquilla, Bogotá, Cartagena, Ibagué, Santa Marta para validación de: " + requisito)
+        crear_seccion_cuadro("DESARROLLO DE LA REUNIÓN", "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.")
+        crear_seccion_cuadro("COMPROMISOS", "Dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos y activos a través de los procedimientos de SERGEM.")
     else:
-        doc.add_paragraph("• Todo el personal debe cumplir estrictamente con los controles establecidos en este documento.\n• El incumplimiento generará las sanciones disciplinarias correspondientes.")
+        crear_seccion_cuadro("OBJETIVO DEL DOCUMENTO", f"Establecer los lineamientos requeridos para dar cumplimiento normativo a: {requisito}.")
+        crear_seccion_cuadro("ALCANCE", "Aplica para todos los empleados, contratistas y proveedores de SERGEM Mensajería S.A.S. a nivel nacional.")
+        
+        texto_politica = "- El personal debe cumplir estrictamente con los controles.\n- El incumplimiento generará medidas disciplinarias."
+        if "copias" in requisito.lower() or "restauración" in requisito.lower():
+            texto_politica = "- SERGEM delega la gestión de copias de seguridad en la nube al proveedor SOLINUX.\n- Se realizarán pruebas de restauración periódicas avaladas por el proveedor."
+        elif "contraseñas" in requisito.lower():
+            texto_politica = "- Las contraseñas deben ser alfanuméricas con una longitud mínima de 8 caracteres.\n- Se exige cambio obligatorio cada 90 días."
+            
+        crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", texto_politica)
+        crear_seccion_cuadro("COMPROMISOS", "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001.")
 
-    add_section_header("5. PROCEDIMIENTO")
-    doc.add_paragraph("1. Identificación del requerimiento normativo o técnico.\n2. Ejecución de la actividad según la política establecida.\n3. Registro y evidencia de la actividad en los formatos correspondientes.")
-
-    add_section_header("6. LISTADO DE DOCUMENTOS REFERENCIADOS")
-    doc.add_paragraph("• Norma ISO/IEC 27001.\n• Políticas del SGSI SERGEM.")
-
-    add_section_header("7. CONTROL DE CAMBIO")
-    table_cc = doc.add_table(rows=2, cols=3)
-    table_cc.style = 'Table Grid'
+    # FIRMA (Idéntica al formato oficial)
+    p_firma = doc.add_paragraph("\n\nFIRMA RESPONSABLE / APROBADOR: ___________________________________")
+    p_firma.bold = True
     
-    table_cc.cell(0,0).text = "Elaborado por:"
-    table_cc.cell(0,1).text = "Revisado por:"
-    table_cc.cell(0,2).text = "Aprobado por:"
-    
-    table_cc.cell(1,0).text = "Nombre: Javier\nCargo: Consultor SGSI\nFirma:"
-    table_cc.cell(1,1).text = "Nombre: Jefe de Sistemas\nCargo: Director de TI\nFirma:"
-    table_cc.cell(1,2).text = "Nombre: Representante Legal\nCargo: Gerencia\nFirma:"
-
     output = io.BytesIO()
     doc.save(output)
     return output.getvalue()
+
 
 df_archivos = obtener_archivos_drive()
 if 'visor_id' not in st.session_state: st.session_state.visor_id = None
@@ -229,7 +254,7 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA (COMPLETO CON PLOTLY Y EXPANDERS)
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA 
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
@@ -457,7 +482,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         
         with col_qms:
             st.markdown("### 📝 Motor Generador de Documentos QMS")
-            st.info("Para los documentos faltantes, puedes autogenerar el formato oficial de SERGEM listo para firmar.")
+            st.info("Para los documentos faltantes, autogenera el formato oficial idéntico al acta de calidad de SERGEM, listo para firmar.")
             
             if lista_faltantes:
                 req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
