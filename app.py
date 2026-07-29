@@ -6,6 +6,9 @@ import os
 import io
 import plotly.express as px
 import openpyxl
+from docx import Document
+from docx.shared import Pt, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
@@ -60,7 +63,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIÓN API EN VIVO
+# 2. CONEXIONES API Y HERRAMIENTAS DE EDICIÓN
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -78,7 +81,6 @@ def mostrar_visor_archivo(file_id, nombre_archivo):
     url = f"https://drive.google.com/file/d/{file_id}/preview"
     st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
 
-# Lógica para usar OpenPyXL y actualizar fechas por dentro del Excel de Inventario
 def actualizar_fecha_inventario_excel(file_id):
     url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
     try:
@@ -86,18 +88,84 @@ def actualizar_fecha_inventario_excel(file_id):
         if r.status_code == 200:
             wb = openpyxl.load_workbook(io.BytesIO(r.content))
             ws = wb.active
-            # Busca en las primeras 10 filas y 20 columnas la palabra "2025" y la cambia a "2026"
             for row in ws.iter_rows(min_row=1, max_row=10, min_col=1, max_col=20):
                 for cell in row:
                     if cell.value and isinstance(cell.value, str) and '2025' in cell.value:
                         cell.value = cell.value.replace('2025', '2026')
-            
             output = io.BytesIO()
             wb.save(output)
             return output.getvalue()
     except Exception as e:
         pass
     return None
+
+def generar_documento_word(requisito):
+    doc = Document()
+    sections = doc.sections
+    for section in sections:
+        section.top_margin = Inches(1)
+        section.bottom_margin = Inches(1)
+        section.left_margin = Inches(1)
+        section.right_margin = Inches(1)
+
+    table = doc.add_table(rows=1, cols=2)
+    table.style = 'Table Grid'
+    cell_info = table.cell(0, 1)
+    
+    p = cell_info.paragraphs[0]
+    p.add_run("SERGEM Mensajería S.A.S.\n").bold = True
+    p.add_run(f"{requisito.upper()}\n").bold = True
+    p.add_run("CÓDIGO: SGSI-2026-001\nVersión No. 1\nFecha: 29-jul-2026")
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
+    doc.add_paragraph()
+    
+    def add_section_header(text):
+        p = doc.add_paragraph()
+        run = p.add_run(text)
+        run.bold = True
+        run.font.size = Pt(12)
+        
+    add_section_header("1. OBJETIVO")
+    doc.add_paragraph(f"Establecer los lineamientos y directrices para el cumplimiento de {requisito.lower()} en SERGEM Mensajería S.A.S., garantizando la confidencialidad, integridad y disponibilidad de la información.")
+
+    add_section_header("2. ALCANCE")
+    doc.add_paragraph("Este documento aplica para todos los empleados, contratistas y proveedores de SERGEM Mensajería S.A.S. a nivel nacional que tengan acceso a los sistemas de información.")
+
+    add_section_header("3. DEFINICIONES")
+    doc.add_paragraph("• SGSI: Sistema de Gestión de Seguridad de la Información.\n• Activo de información: Cualquier elemento que tenga valor para la organización.")
+
+    add_section_header("4. REGLAS GENERALES / POLÍTICAS")
+    if "copias" in requisito.lower() or "restauración" in requisito.lower():
+        doc.add_paragraph("• SERGEM delega la administración técnica de copias de seguridad en la nube al proveedor SOLINUX.\n• Se realizarán pruebas de restauración semestrales certificadas por SOLINUX para validar la integridad.")
+    elif "contraseñas" in requisito.lower():
+        doc.add_paragraph("• Las contraseñas deben tener una longitud mínima de 8 caracteres alfanuméricos.\n• Es obligatorio el cambio de contraseña cada 90 días.")
+    elif "incidentes" in requisito.lower():
+        doc.add_paragraph("• Todo incidente de seguridad debe ser reportado inmediatamente al área de Sistemas.\n• Se mantendrá un registro de incidentes para aplicar acciones correctivas.")
+    else:
+        doc.add_paragraph("• Todo el personal debe cumplir estrictamente con los controles establecidos en este documento.\n• El incumplimiento generará las sanciones disciplinarias correspondientes.")
+
+    add_section_header("5. PROCEDIMIENTO")
+    doc.add_paragraph("1. Identificación del requerimiento normativo o técnico.\n2. Ejecución de la actividad según la política establecida.\n3. Registro y evidencia de la actividad en los formatos correspondientes.")
+
+    add_section_header("6. LISTADO DE DOCUMENTOS REFERENCIADOS")
+    doc.add_paragraph("• Norma ISO/IEC 27001.\n• Políticas del SGSI SERGEM.")
+
+    add_section_header("7. CONTROL DE CAMBIO")
+    table_cc = doc.add_table(rows=2, cols=3)
+    table_cc.style = 'Table Grid'
+    
+    table_cc.cell(0,0).text = "Elaborado por:"
+    table_cc.cell(0,1).text = "Revisado por:"
+    table_cc.cell(0,2).text = "Aprobado por:"
+    
+    table_cc.cell(1,0).text = "Nombre: Javier\nCargo: Consultor SGSI\nFirma:"
+    table_cc.cell(1,1).text = "Nombre: Jefe de Sistemas\nCargo: Director de TI\nFirma:"
+    table_cc.cell(1,2).text = "Nombre: Representante Legal\nCargo: Gerencia\nFirma:"
+
+    output = io.BytesIO()
+    doc.save(output)
+    return output.getvalue()
 
 df_archivos = obtener_archivos_drive()
 if 'visor_id' not in st.session_state: st.session_state.visor_id = None
@@ -161,7 +229,7 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA (COMPLETO CON PLOTLY Y EXPANDERS)
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
@@ -257,7 +325,6 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
 
         st.divider()
 
-        # AQUÍ SE MOVIO EL VISOR DEL ARCHIVO ORIGINAL AL PRINCIPIO
         if matrix_file_id:
             with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
                 st.info("Vista en vivo del documento fuente alojado en Google Drive.")
@@ -284,7 +351,7 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
 
 # -----------------------------------------------------------------------------
-# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA
+# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA Y GENERADOR DE WORD
 # -----------------------------------------------------------------------------
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
     st.markdown("""
@@ -332,6 +399,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         archivos_validos = [] 
         ids_procesados = set() 
         inventario_id = None 
+        lista_faltantes = []
 
         st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
         
@@ -359,8 +427,9 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 archivos_encontrados.append({
                     "Requisito": req, 
                     "Estado": "❌ Faltante", 
-                    "Archivo Base": "Gestionar mediante Plantillas QMS"
+                    "Archivo Base": "Generar desde módulo inferior"
                 })
+                lista_faltantes.append(req)
 
         df_analisis = pd.DataFrame(archivos_encontrados)
         
@@ -382,19 +451,36 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         st.divider()
 
         # ---------------------------------------------------------
-        # ZONA DE ACCIÓN: MÓDULO QMS Y EDICIÓN EXCEL
+        # ZONA DE ACCIÓN: GENERADOR DE WORD Y EMPAQUE
         # ---------------------------------------------------------
         col_qms, col_auto = st.columns(2)
         
         with col_qms:
-            st.markdown("### 📑 Gestión de Faltantes (Sistema QMS)")
-            st.info("Para los documentos marcados como faltantes, por favor solicita los formatos oficiales a tu Sistema de Gestión de Calidad (QMS), complétalos con información del año en curso, hazlos firmar y súbelos al Drive.")
-        
+            st.markdown("### 📝 Motor Generador de Documentos QMS")
+            st.info("Para los documentos faltantes, puedes autogenerar el formato oficial de SERGEM listo para firmar.")
+            
+            if lista_faltantes:
+                req_selec = st.selectbox("Seleccione el documento a construir:", lista_faltantes)
+                
+                if st.button(f"🪄 Crear Word Oficial: {req_selec}"):
+                    archivo_word = generar_documento_word(req_selec)
+                    nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.docx"
+                    
+                    st.download_button(
+                        label="⬇️ Descargar Documento Listo para Firmar",
+                        data=archivo_word,
+                        file_name=nombre_descarga,
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        type="secondary"
+                    )
+            else:
+                st.success("✅ ¡Todos los documentos están listos!")
+
         with col_auto:
             st.markdown("### 🚀 Acción de Automatización y Empaque")
             
             if inventario_id:
-                st.warning("Se detectó el 'Inventario de TI' en formato Excel. Puedes descargar el archivo con la fecha actualizada internamente a 2026 para validarlo, antes de generar las copias finales.")
+                st.warning("Se detectó el 'Inventario de TI' en formato Excel. Puedes descargar el archivo con la fecha actualizada a 2026.")
                 if st.button("🪄 Descargar Inventario Actualizado (2026)"):
                     with st.spinner("Modificando celdas del Excel en segundo plano..."):
                         excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
