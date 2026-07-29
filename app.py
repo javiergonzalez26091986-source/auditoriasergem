@@ -12,7 +12,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURACIÓN Y ESTILOS
+# 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Auditoría SGSI - SERGEM", 
@@ -95,7 +95,7 @@ def actualizar_fecha_inventario_excel(file_id):
     return None
 
 # -----------------------------------------------------------------------------
-# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (ESPECÍFICO)
+# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -134,14 +134,11 @@ def obtener_datos_qms(requisito):
     elif "capacitaci" in req or "planilla" in req:
         return {
             "codigo": "PR-08-001",
-            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
             "secciones": {
-                "1. OBJETIVO": "Establecer la metodología para la programación, ejecución y registro de las capacitaciones y concientización en seguridad de la información.",
-                "2. ALCANCE": "Aplica para todo el personal directo e indirecto de SERGEM Mensajería S.A.S.",
-                "3. DEFINICIONES": "• Concientización: Proceso de educar al personal sobre los riesgos de seguridad.\n• Planilla de asistencia: Registro formal de participación.",
-                "4. REGLAS GENERALES / POLÍTICAS": "• Todo empleado nuevo debe recibir inducción en el SGSI.\n• Se debe realizar al menos una capacitación general anual en ciberseguridad.",
-                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. TI y RRHH detectan las necesidades de capacitación anual.\n2. Elaboración y aprobación del cronograma de capacitaciones.\n3. Ejecución de las charlas (presenciales o virtuales).\n4. Firma de planillas de asistencia y evaluación de conocimientos adquiridos.",
-                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• FO-08-002 Formato Acta Informativa / Planilla de Asistencia.\n• Norma ISO/IEC 27001:2022."
+                "AGENDA DE LA REUNIÓN": "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta.\n\nTema principal: " + requisito,
+                "DESARROLLO DE LA REUNIÓN": "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
+                "COMPROMISOS": "La política tiene como objeto dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM."
             }
         }
 
@@ -164,7 +161,7 @@ def obtener_datos_qms(requisito):
     elif "contraseña" in req or "clave" in req:
         return {
             "codigo": "PO-07-004",
-            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DEL DOCUMENTO": "Definir los lineamientos técnicos para la creación, protección y rotación de contraseñas de los sistemas de información.",
                 "2. ALCANCE": "Aplica a todos los usuarios con credenciales de acceso a la red de SERGEM.",
@@ -177,7 +174,7 @@ def obtener_datos_qms(requisito):
     elif "móvil" in req or "dispositivo" in req:
         return {
             "codigo": "PO-07-008",
-            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DEL DOCUMENTO": "Establecer las normas de seguridad para el uso de dispositivos móviles (Smartphones, Laptops) que procesan información de la compañía.",
                 "2. ALCANCE": "Aplica para todos los equipos móviles corporativos y personales (BYOD) autorizados.",
@@ -240,11 +237,11 @@ def obtener_datos_qms(requisito):
             }
         }
         
-    # CASO POR DEFECTO (Para cualquier documento no mapeado específicamente)
+    # CASO POR DEFECTO
     else:
         return {
             "codigo": "SG-07-099",
-            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos, políticas y controles aplicables a: {requisito.title()}.",
                 "2. ALCANCE": "Aplica para todos los procesos, colaboradores y proveedores de SERGEM Mensajería S.A.S.",
@@ -275,7 +272,7 @@ def generar_documento_word(requisito):
         for idx, width in enumerate(widths):
             row.cells[idx].width = width
 
-    # Logos Izquierda y Derecha
+    # Logos
     cell_logo_L = table.cell(0, 0)
     cell_logo_L.merge(table.cell(1, 0))
     p_logo_L = cell_logo_L.paragraphs[0]
@@ -304,7 +301,7 @@ def generar_documento_word(requisito):
     run_title.bold = True
     run_title.font.size = Pt(10)
 
-    # Metadatos Dinámicos
+    # Metadatos
     p_cod = table.cell(1, 1).paragraphs[0]
     p_cod.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_cod.add_run(f"Código: {datos_doc['codigo']}").bold = True
@@ -338,9 +335,38 @@ def generar_documento_word(requisito):
         t.cell(1, 0).text = contenido
         doc.add_paragraph() 
 
-    # FIRMA DINÁMICA SEGÚN TIPO DE DOCUMENTO
-    p_firma = doc.add_paragraph(f"\n\n{datos_doc['tipo_firma']}: ___________________________________")
-    p_firma.bold = True
+    # ---------------------------------------------------------
+    # FIRMAS Y CONTROL DE CAMBIOS DINÁMICO
+    # ---------------------------------------------------------
+    if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
+        # Tabla de 3 columnas para documentos QMS oficiales
+        doc.add_paragraph() # Espacio
+        table_firmas = doc.add_table(rows=2, cols=3)
+        table_firmas.style = 'Table Grid'
+        table_firmas.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table_firmas.autofit = False
+        
+        # Anchos iguales (6.9 pulgadas en total)
+        for row in table_firmas.rows:
+            for cell in row.cells:
+                cell.width = Inches(2.3)
+                
+        # Encabezados
+        for i, text in enumerate(["Elaborado por:", "Revisado por:", "Aprobado por:"]):
+            p = table_firmas.cell(0, i).paragraphs[0]
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            run = p.add_run(text)
+            run.bold = True
+            
+        # Contenido de la firma con espacio para firmar físicamente
+        table_firmas.cell(1, 0).text = "\n\n\nNombre: Anyelo Rojas Quinayás\nCargo: Coordinador de Calidad"
+        table_firmas.cell(1, 1).text = "\n\n\nNombre: Ernesto Gutiérrez C.\nCargo: Director de Proyectos y Tecnología"
+        table_firmas.cell(1, 2).text = "\n\n\nNombre: Giovanny Berrio Realpe\nCargo: Gerente"
+
+    else:
+        # Línea de firma simple para actas, capacitaciones y contratos
+        p_firma = doc.add_paragraph(f"\n\n{datos_doc['tipo_firma']}: ___________________________________")
+        p_firma.bold = True
     
     output = io.BytesIO()
     doc.save(output)
