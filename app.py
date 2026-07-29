@@ -246,10 +246,9 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Filtramos para NO buscar entre los que ya tienen "Actualizado" y evitar un bucle
+        # Filtramos para NO buscar entre los que ya tienen "Actualizado"
         df_archivos_base = df_archivos[~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)]
 
-        # Diccionario estricto basado en el PDF de requerimientos
         requisitos = {
             "Políticas de Seg. Información y Habeas Data": ["POLITICA", "SEGURIDAD", "HABEAS"],
             "Procedimientos y Capacitaciones de TI": ["CAPACITACION", "TECNOLOGIA", "DISCIPLINARIO"],
@@ -269,7 +268,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         }
 
         archivos_encontrados = []
-        ids_para_copiar = []
+        archivos_validos = [] # Guardaremos el par (nombre, id) para procesar uno a uno
 
         st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
         
@@ -284,7 +283,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     "Estado": "✅ Encontrado", 
                     "Archivo Base": candidato['nombre']
                 })
-                ids_para_copiar.append(candidato['id'])
+                archivos_validos.append({"nombre": candidato['nombre'], "id": candidato['id']})
             else:
                 archivos_encontrados.append({
                     "Requisito": req, 
@@ -297,25 +296,41 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         st.divider()
         st.markdown("### 🚀 Acción de Automatización")
-        st.info(f"Se encontraron **{len(ids_para_copiar)}** documentos base en el sistema que cumplen con el check-list de la auditoría.")
+        st.info(f"Se encontraron **{len(archivos_validos)}** documentos base en el sistema que cumplen con el check-list de la auditoría.")
         
         if st.button("▶️ Generar Copias Actualizadas en 'Auditoría Actual'", type="primary"):
-            with st.spinner("Conectando con Google Drive... Procesando extensiones y validando permisos..."):
+            st.markdown("#### Progreso de la copia:")
+            barra_progreso = st.progress(0)
+            texto_estado = st.empty()
+            resultados_finales = []
+            
+            # MAGIA AQUÍ: Procesamos uno por uno. Si uno tumba el servidor, los demás se salvan.
+            for i, doc in enumerate(archivos_validos):
+                texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
+                
                 payload = {
                     "action": "copiar_archivos",
-                    "fileIds": ids_para_copiar
+                    "fileIds": [doc['id']]  # Enviamos solo UNA id a la vez
                 }
+                
                 try:
                     res_post = requests.post(URL_API_DRIVE, json=payload)
                     respuesta = res_post.json()
                     
                     if respuesta.get("status") == "success":
-                        st.success("✅ Proceso finalizado. A continuación el detalle del estado de cada documento:")
-                        with st.expander("Ver detalle de operaciones", expanded=True):
-                            for f in respuesta.get("copiados", []):
-                                st.write(f"- {f}")
-                        st.cache_data.clear()
+                        resultados_finales.extend(respuesta.get("copiados", []))
                     else:
-                        st.error(f"Error en Google Drive: {respuesta.get('message')}")
+                        resultados_finales.append(f"❌ Omitido (Bloqueo severo del dueño o conexión): {doc['nombre']}")
                 except Exception as e:
-                    st.error(f"Error de comunicación con la API: {e}")
+                    resultados_finales.append(f"❌ Omitido (Archivo inaccesible o restringido): {doc['nombre']}")
+                    
+                barra_progreso.progress((i + 1) / len(archivos_validos))
+            
+            texto_estado.empty()
+            st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
+            
+            with st.expander("Ver detalle de operaciones", expanded=True):
+                for f in resultados_finales:
+                    st.write(f"- {f}")
+                    
+            st.cache_data.clear()
