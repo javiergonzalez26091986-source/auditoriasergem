@@ -5,7 +5,6 @@ import base64
 import os
 import io
 import plotly.express as px
-from st_aggrid import AgGrid, GridOptionsBuilder
 import openpyxl
 
 # -----------------------------------------------------------------------------
@@ -162,13 +161,13 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA (CON PLOTLY Y AGGRID)
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
         <div class="card-custom">
             <div class="card-header-custom">Hallazgos y Novedades Auditoría Pasada</div>
-            <p>Resumen visual e interactivo de las observaciones pasadas.</p>
+            <p>Resumen visual e interactivo de las observaciones pasadas. Expanda cada componente para ver el detalle.</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -237,7 +236,7 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
     if not df_nov.empty:
         conteo_estados = df_nov['Estado'].value_counts()
         
-        # 📊 Integración Gráfico Plotly
+        # Gráfico Plotly Mantenido
         st.markdown("### 📈 Resumen General de Hallazgos")
         col_metric, col_chart = st.columns([1, 2])
         
@@ -247,7 +246,6 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
             st.metric("⚠️ NO Subsanadas", conteo_estados.get('NO SUBSANADA', 0))
             
         with col_chart:
-            # Gráfica de Dona Profesional
             fig = px.pie(
                 values=conteo_estados.values, 
                 names=conteo_estados.index, 
@@ -260,31 +258,33 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
 
         st.divider()
 
-        # 📊 Integración st_aggrid para tablas interactivas
-        st.markdown("### 🔍 Matriz Interactiva de Observaciones")
-        gb = GridOptionsBuilder.from_dataframe(df_nov)
-        gb.configure_pagination(paginationAutoPageSize=True)
-        gb.configure_side_bar()
-        gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=False)
-        gridOptions = gb.build()
+        # Interfaz clásica restaurada (Expanders y Scroll)
+        st.markdown("### 🔍 Detalle Interactivo de Observaciones")
         
-        AgGrid(
-            df_nov,
-            gridOptions=gridOptions,
-            enable_enterprise_modules=False,
-            height=400,
-            theme='balham',
-            fit_columns_on_grid_load=True
-        )
+        filtro = st.selectbox("Filtrar estado de la novedad:", ["Todos los Estados"] + list(df_nov['Estado'].unique()))
+        df_mostrar = df_nov if filtro == "Todos los Estados" else df_nov[df_nov['Estado'] == filtro]
+
+        for _, row in df_mostrar.iterrows():
+            emoji = "✅" if row['Estado'] == "SUBSANADA" else "⚠️" if row['Estado'] == "NO SUBSANADA" else "🔒"
+            with st.expander(f"{emoji} {row['Componente']} - Estado: {row['Estado']}"):
+                st.markdown("**📌 Observación Original:**")
+                st.info(row['Observación'])
+                st.markdown("**🛠️ Actividad Realizada / Cómo fue subsanado:**")
+                
+                if pd.notna(row['Subsanación (Actividad)']) and str(row['Subsanación (Actividad)']).strip() != "":
+                    st.success(row['Subsanación (Actividad)'])
+                else:
+                    st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
 
         if matrix_file_id:
+            st.divider()
             with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
                 st.info("Vista en vivo del documento fuente alojado en Google Drive.")
                 url_visor = f"https://drive.google.com/file/d/{matrix_file_id}/preview"
                 st.markdown(f'<iframe class="pdf-frame" src="{url_visor}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA (CON AGGRID Y MANIPULACIÓN EXCEL)
+# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA
 # -----------------------------------------------------------------------------
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
     st.markdown("""
@@ -331,8 +331,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         archivos_encontrados = []
         archivos_validos = [] 
         ids_procesados = set() 
-        lista_faltantes = [] 
-        inventario_id = None # Guardar ID del Excel de inventario para modificarlo
+        inventario_id = None 
 
         st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
         
@@ -363,24 +362,25 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     "Estado": "❌ Faltante", 
                     "Archivo Base": "Gestionar mediante Plantillas QMS"
                 })
-                lista_faltantes.append(req)
 
         df_analisis = pd.DataFrame(archivos_encontrados)
         
-        # Grid Interactivo en lugar de st.dataframe
-        gb_analisis = GridOptionsBuilder.from_dataframe(df_analisis)
-        gb_analisis.configure_pagination(paginationAutoPageSize=True)
-        gb_analisis.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=False)
-        grid_analisis = gb_analisis.build()
-        
-        AgGrid(
-            df_analisis,
-            gridOptions=grid_analisis,
-            enable_enterprise_modules=False,
-            height=350,
-            theme='balham',
-            fit_columns_on_grid_load=True
+        # Filtro clásico restaurado (Botones horizontales)
+        filtro_req = st.radio(
+            "🔍 Filtrar estado de los documentos:", 
+            ["Mostrar Todos", "❌ Solo Faltantes", "✅ Solo Encontrados"], 
+            horizontal=True
         )
+        
+        if filtro_req == "❌ Solo Faltantes":
+            df_mostrar = df_analisis[df_analisis['Estado'] == "❌ Faltante"]
+        elif filtro_req == "✅ Solo Encontrados":
+            df_mostrar = df_analisis[df_analisis['Estado'].str.contains("Encontrado")]
+        else:
+            df_mostrar = df_analisis
+            
+        # Visualización clásica restaurada (Scroll libre)
+        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
 
         st.divider()
 
