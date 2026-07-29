@@ -9,6 +9,7 @@ import openpyxl
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_TABLE_ALIGNMENT
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
@@ -102,46 +103,48 @@ def actualizar_fecha_inventario_excel(file_id):
 def generar_documento_word(requisito):
     doc = Document()
     
-    # Márgenes
+    # Márgenes: Quedan 6.9 pulgadas exactas de área de trabajo
     for section in doc.sections:
         section.top_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.8)
         section.right_margin = Inches(0.8)
 
-    # NUEVO ENCABEZADO 2024: 2 filas x 5 columnas
+    # NUEVO ENCABEZADO 2024 (Alineado)
     table = doc.add_table(rows=2, cols=5)
     table.style = 'Table Grid'
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
     
-    # Ajuste aproximado de columnas
-    widths = [Inches(1.2), Inches(1.5), Inches(1.0), Inches(1.0), Inches(1.2)]
+    # Reparto estricto para sumar 6.9 pulgadas exactas
+    widths = [Inches(1.4), Inches(1.4), Inches(1.3), Inches(1.4), Inches(1.4)]
     for row in table.rows:
         for idx, width in enumerate(widths):
             row.cells[idx].width = width
 
-    # Logo Izquierdo (Fusión Vertical)
+    # Logo Izquierdo
     cell_logo_L = table.cell(0, 0)
     cell_logo_L.merge(table.cell(1, 0))
     p_logo_L = cell_logo_L.paragraphs[0]
     p_logo_L.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-    # Logo Derecho (Fusión Vertical)
+    # Logo Derecho
     cell_logo_R = table.cell(0, 4)
     cell_logo_R.merge(table.cell(1, 4))
     p_logo_R = cell_logo_R.paragraphs[0]
     p_logo_R.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Incrustar imágenes a ambos lados
+    # Incrustar imágenes
     for p in [p_logo_L, p_logo_R]:
         try:
             if os.path.exists("sergemLogo.png"):
-                p.add_run().add_picture("sergemLogo.png", width=Inches(0.9))
+                p.add_run().add_picture("sergemLogo.png", width=Inches(1.1))
             else:
                 p.add_run("LOGO").bold = True
         except:
             p.add_run("LOGO").bold = True
 
-    # Título Central (Fusión Horizontal en fila 0, abarca col 1, 2 y 3)
+    # Título Central 
     cell_title = table.cell(0, 1)
     cell_title.merge(table.cell(0, 3))
     p_title = cell_title.paragraphs[0]
@@ -150,7 +153,7 @@ def generar_documento_word(requisito):
     run_title.bold = True
     run_title.font.size = Pt(11)
 
-    # Metadatos en fila 1 (Código, Versión, Fecha)
+    # Metadatos 
     p_cod = table.cell(1, 1).paragraphs[0]
     p_cod.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_cod.add_run("Código: PO-07-014").bold = True
@@ -163,12 +166,18 @@ def generar_documento_word(requisito):
     p_fec.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_fec.add_run("29/07/2026").bold = True
 
-    doc.add_paragraph() # Espacio separador
+    doc.add_paragraph() 
 
-    # FUNCIÓN INTERNA PARA CREAR SECCIONES TIPO "ACTA" (Cuadros)
+    # Cajas de Contenido
     def crear_seccion_cuadro(titulo, contenido):
         t = doc.add_table(rows=2, cols=1)
         t.style = 'Table Grid'
+        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+        t.autofit = False
+        
+        # Forzar el ancho idéntico al encabezado
+        for row in t.rows:
+            row.cells[0].width = Inches(6.9)
         
         p_tit = t.cell(0, 0).paragraphs[0]
         p_tit.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -178,7 +187,6 @@ def generar_documento_word(requisito):
         t.cell(1, 0).text = contenido
         doc.add_paragraph() 
 
-    # LÓGICA DE CONTENIDO SEGÚN REQUISITO
     if "capacitaci" in requisito.lower() or "planillas" in requisito.lower():
         crear_seccion_cuadro("AGENDA DE LA REUNIÓN", "Se programa personal administrativo a nivel nacional: Cali, Barraquilla, Bogotá, Cartagena, Ibagué, Santa Marta para validación de: " + requisito)
         crear_seccion_cuadro("DESARROLLO DE LA REUNIÓN", "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.")
@@ -196,7 +204,6 @@ def generar_documento_word(requisito):
         crear_seccion_cuadro("REGLAS GENERALES / DESARROLLO", texto_politica)
         crear_seccion_cuadro("COMPROMISOS", "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001.")
 
-    # FIRMA
     p_firma = doc.add_paragraph("\n\nFIRMA RESPONSABLE / APROBADOR: ___________________________________")
     p_firma.bold = True
     
