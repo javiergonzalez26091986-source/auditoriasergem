@@ -4,6 +4,9 @@ import requests
 import base64
 import os
 import io
+import plotly.express as px
+from st_aggrid import AgGrid, GridOptionsBuilder
+import openpyxl
 
 # -----------------------------------------------------------------------------
 # 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
@@ -76,27 +79,33 @@ def mostrar_visor_archivo(file_id, nombre_archivo):
     url = f"https://drive.google.com/file/d/{file_id}/preview"
     st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
 
+# Lógica para usar OpenPyXL y actualizar fechas por dentro del Excel de Inventario
+def actualizar_fecha_inventario_excel(file_id):
+    url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
+    try:
+        r = requests.get(url_descarga)
+        if r.status_code == 200:
+            wb = openpyxl.load_workbook(io.BytesIO(r.content))
+            ws = wb.active
+            # Busca en las primeras 10 filas y 20 columnas la palabra "2025" y la cambia a "2026"
+            for row in ws.iter_rows(min_row=1, max_row=10, min_col=1, max_col=20):
+                for cell in row:
+                    if cell.value and isinstance(cell.value, str) and '2025' in cell.value:
+                        cell.value = cell.value.replace('2025', '2026')
+            
+            output = io.BytesIO()
+            wb.save(output)
+            return output.getvalue()
+    except Exception as e:
+        pass
+    return None
+
 df_archivos = obtener_archivos_drive()
 if 'visor_id' not in st.session_state: st.session_state.visor_id = None
 if 'visor_nombre' not in st.session_state: st.session_state.visor_nombre = None
 
 # -----------------------------------------------------------------------------
-# 3. GENERADOR DE PLANTILLAS
-# -----------------------------------------------------------------------------
-def generar_plantilla_csv(tipo_requisito):
-    if "capacitaciones" in tipo_requisito.lower():
-        df = pd.DataFrame(columns=["FECHA (2026)", "NOMBRE DEL COLABORADOR", "CARGO", "TEMA DE CAPACITACION", "FIRMA"])
-    elif "personal retirado" in tipo_requisito.lower():
-        df = pd.DataFrame(columns=["FECHA DE RETIRO (2026)", "NOMBRE COMPLETO", "CÉDULA", "PAZ Y SALVO TI (SI/NO)", "ACCESOS REVOCADOS (SI/NO)"])
-    elif "inventario" in tipo_requisito.lower():
-        df = pd.DataFrame(columns=["TIPO DE ACTIVO", "MARCA/MODELO", "SERIAL", "RESPONSABLE ASIGNADO", "SISTEMA OPERATIVO", "ESTADO"])
-    else:
-        df = pd.DataFrame(columns=["FECHA (2026)", "DESCRIPCIÓN", "RESPONSABLE", "OBSERVACIONES"])
-    
-    return df.to_csv(index=False).encode('utf-8-sig')
-
-# -----------------------------------------------------------------------------
-# 4. BARRA LATERAL FIJA
+# 3. BARRA LATERAL FIJA
 # -----------------------------------------------------------------------------
 st.sidebar.markdown('### 🗂️ Módulos de Evaluación')
 opciones = [
@@ -108,7 +117,7 @@ opciones = [
 seleccion = st.sidebar.radio("Seleccione la vista:", opciones)
 
 # -----------------------------------------------------------------------------
-# 5. LÓGICA DE VISTAS (INICIO Y EXPLORADOR)
+# 4. LÓGICA DE VISTAS (INICIO Y EXPLORADOR)
 # -----------------------------------------------------------------------------
 if seleccion == "🏠 Inicio y Sincronización":
     st.markdown("""
@@ -153,13 +162,13 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 6. MÓDULO: NOVEDADES AUDITORÍA PASADA 
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA (CON PLOTLY Y AGGRID)
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
         <div class="card-custom">
             <div class="card-header-custom">Hallazgos y Novedades Auditoría Pasada</div>
-            <p>Resumen interactivo de las observaciones pasadas. Expanda cada componente para ver el detalle de la observación y la actividad de subsanación.</p>
+            <p>Resumen visual e interactivo de las observaciones pasadas.</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -227,51 +236,67 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
 
     if not df_nov.empty:
         conteo_estados = df_nov['Estado'].value_counts()
+        
+        # 📊 Integración Gráfico Plotly
         st.markdown("### 📈 Resumen General de Hallazgos")
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Total Observaciones", len(df_nov))
-        col2.metric("✅ Subsanadas", conteo_estados.get('SUBSANADA', 0))
-        col3.metric("⚠️ NO Subsanadas", conteo_estados.get('NO SUBSANADA', 0))
-        col4.metric("🔒 Cerradas", conteo_estados.get('CERRADO', 0))
+        col_metric, col_chart = st.columns([1, 2])
+        
+        with col_metric:
+            st.metric("Total Observaciones", len(df_nov))
+            st.metric("✅ Subsanadas", conteo_estados.get('SUBSANADA', 0))
+            st.metric("⚠️ NO Subsanadas", conteo_estados.get('NO SUBSANADA', 0))
+            
+        with col_chart:
+            # Gráfica de Dona Profesional
+            fig = px.pie(
+                values=conteo_estados.values, 
+                names=conteo_estados.index, 
+                hole=0.4, 
+                color=conteo_estados.index,
+                color_discrete_map={'SUBSANADA':'#2ecc71', 'NO SUBSANADA':'#e74c3c', 'SIN ESTADO':'#f1c40f'}
+            )
+            fig.update_layout(margin=dict(t=0, b=0, l=0, r=0), height=300)
+            st.plotly_chart(fig, use_container_width=True)
+
         st.divider()
+
+        # 📊 Integración st_aggrid para tablas interactivas
+        st.markdown("### 🔍 Matriz Interactiva de Observaciones")
+        gb = GridOptionsBuilder.from_dataframe(df_nov)
+        gb.configure_pagination(paginationAutoPageSize=True)
+        gb.configure_side_bar()
+        gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=False)
+        gridOptions = gb.build()
+        
+        AgGrid(
+            df_nov,
+            gridOptions=gridOptions,
+            enable_enterprise_modules=False,
+            height=400,
+            theme='balham',
+            fit_columns_on_grid_load=True
+        )
 
         if matrix_file_id:
             with st.expander("📄 Clic aquí para verificar el archivo matriz original (Excel de Auditoría)"):
-                st.info("Vista en vivo del documento fuente alojado en Google Drive. Si modificas el archivo allí, los cambios se reflejarán aquí tras la sincronización.")
+                st.info("Vista en vivo del documento fuente alojado en Google Drive.")
                 url_visor = f"https://drive.google.com/file/d/{matrix_file_id}/preview"
                 st.markdown(f'<iframe class="pdf-frame" src="{url_visor}" width="100%" height="600"></iframe>', unsafe_allow_html=True)
-                
-        st.markdown("### 🔍 Detalle Interactivo de Observaciones")
-        filtro = st.selectbox("Filtrar estado de la novedad:", ["Todos los Estados"] + list(df_nov['Estado'].unique()))
-        df_mostrar = df_nov if filtro == "Todos los Estados" else df_nov[df_nov['Estado'] == filtro]
-
-        for _, row in df_mostrar.iterrows():
-            emoji = "✅" if row['Estado'] == "SUBSANADA" else "⚠️" if row['Estado'] == "NO SUBSANADA" else "🔒"
-            with st.expander(f"{emoji} {row['Componente']} - Estado: {row['Estado']}"):
-                st.markdown("**📌 Observación Original:**")
-                st.info(row['Observación'])
-                st.markdown("**🛠️ Actividad Realizada / Cómo fue subsanado:**")
-                if pd.notna(row['Subsanación (Actividad)']) and str(row['Subsanación (Actividad)']).strip() != "":
-                    st.success(row['Subsanación (Actividad)'])
-                else:
-                    st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
 
 # -----------------------------------------------------------------------------
-# 7. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA
+# 6. MÓDULO INTELIGENTE: PREPARACIÓN DE AUDITORÍA (CON AGGRID Y MANIPULACIÓN EXCEL)
 # -----------------------------------------------------------------------------
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
     st.markdown("""
         <div class="card-custom">
             <div class="card-header-custom">Preparación Automática para Auditoría (ISO 27001/27002)</div>
-            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos exactos del formato <b>RM-4901-26</b>. 
-            Identifica qué archivos ya poseemos y permite generar copias actualizadas en 'Auditoría actual'.</p>
+            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos exactos del formato <b>RM-4901-26</b>.</p>
         </div>
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
         df_archivos_base = df_archivos[(~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)) & (df_archivos['tipo'] == 'Archivo')]
 
-        # Diccionario ajustado EXACTAMENTE al documento de solicitud RM-4901-26
         requisitos = {
             "Políticas de la seguridad de la información": ["POLITICA", "SEGURIDAD", "INFORMACION"],
             "Políticas de protección de datos (Habeas Data)": ["HABEAS", "DATOS"],
@@ -306,20 +331,27 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         archivos_encontrados = []
         archivos_validos = [] 
         ids_procesados = set() 
-        lista_faltantes = [] # Para almacenar los que requieren plantilla
+        lista_faltantes = [] 
+        inventario_id = None # Guardar ID del Excel de inventario para modificarlo
 
         st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
-        st.info("💡 **Guía de Acción:** Los documentos con estado '✅ Encontrado' serán actualizados automáticamente. Si un documento marca '❌ Faltante', podrás descargar una plantilla base para llenarla, firmarla y subirla al Drive.")
-
+        
         for req, keywords in requisitos.items():
             mask = df_archivos_base['nombre'].str.upper().str.contains('|'.join(keywords))
             coincidencias = df_archivos_base[mask]
 
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
+                estado = "✅ Encontrado"
+                
+                # Identificar si es el inventario de TI para habilitar la edición de fecha
+                if "INVENTARIO" in req.upper() and "TI" in req.upper() and candidato['nombre'].endswith(('.xls', '.xlsx')):
+                    estado = "⚙️ Encontrado (Editable)"
+                    inventario_id = candidato['id']
+
                 archivos_encontrados.append({
                     "Requisito": req, 
-                    "Estado": "✅ Encontrado", 
+                    "Estado": estado, 
                     "Archivo Base": candidato['nombre']
                 })
                 if candidato['id'] not in ids_procesados:
@@ -329,76 +361,83 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 archivos_encontrados.append({
                     "Requisito": req, 
                     "Estado": "❌ Faltante", 
-                    "Archivo Base": "Requiere carga (Descargar plantilla abajo)"
+                    "Archivo Base": "Gestionar mediante Plantillas QMS"
                 })
                 lista_faltantes.append(req)
 
         df_analisis = pd.DataFrame(archivos_encontrados)
         
-        filtro_req = st.radio(
-            "🔍 Filtrar estado de los documentos:", 
-            ["Mostrar Todos", "❌ Solo Faltantes", "✅ Solo Encontrados"], 
-            horizontal=True
-        )
+        # Grid Interactivo en lugar de st.dataframe
+        gb_analisis = GridOptionsBuilder.from_dataframe(df_analisis)
+        gb_analisis.configure_pagination(paginationAutoPageSize=True)
+        gb_analisis.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=False)
+        grid_analisis = gb_analisis.build()
         
-        if filtro_req == "❌ Solo Faltantes":
-            df_mostrar = df_analisis[df_analisis['Estado'] == "❌ Faltante"]
-        elif filtro_req == "✅ Solo Encontrados":
-            df_mostrar = df_analisis[df_analisis['Estado'] == "✅ Encontrado"]
-        else:
-            df_mostrar = df_analisis
-            
-        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
-
-        # ---------------------------------------------------------
-        # SECCIÓN NUEVA: DESCARGA DE PLANTILLAS PARA FALTANTES
-        # ---------------------------------------------------------
-        if lista_faltantes:
-            st.markdown("### 📑 Generador de Plantillas Base (2026)")
-            st.warning("Selecciona un documento faltante de la lista para descargar una plantilla estructurada. Solo debes llenarla con la información de este año, hacerla firmar y subirla a Drive.")
-            
-            req_seleccionado = st.selectbox("Seleccione el requisito faltante:", lista_faltantes)
-            
-            if req_seleccionado:
-                csv_data = generar_plantilla_csv(req_seleccionado)
-                nombre_archivo_sugerido = f"Plantilla_{req_seleccionado.replace(' ', '_').replace('/', '-')}_2026.csv"
-                
-                st.download_button(
-                    label=f"⬇️ Descargar Plantilla: {req_seleccionado}",
-                    data=csv_data,
-                    file_name=nombre_archivo_sugerido,
-                    mime='text/csv',
-                    type="secondary"
-                )
+        AgGrid(
+            df_analisis,
+            gridOptions=grid_analisis,
+            enable_enterprise_modules=False,
+            height=350,
+            theme='balham',
+            fit_columns_on_grid_load=True
+        )
 
         st.divider()
-        st.markdown("### 🚀 Acción de Automatización")
-        st.info(f"Se encontraron **{len(archivos_validos)}** documentos base en el sistema que cumplen con el check-list de la auditoría.")
+
+        # ---------------------------------------------------------
+        # ZONA DE ACCIÓN: MÓDULO QMS Y EDICIÓN EXCEL
+        # ---------------------------------------------------------
+        col_qms, col_auto = st.columns(2)
         
-        if st.button("▶️ Generar Copias Actualizadas en 'Auditoría Actual'", type="primary"):
-            st.markdown("#### Progreso de la copia:")
-            barra_progreso = st.progress(0)
-            texto_estado = st.empty()
-            resultados_finales = []
+        with col_qms:
+            st.markdown("### 📑 Gestión de Faltantes (Sistema QMS)")
+            st.info("Para los documentos marcados como faltantes, por favor solicita los formatos oficiales a tu Sistema de Gestión de Calidad (QMS), complétalos con información del año en curso, hazlos firmar y súbelos al Drive.")
+        
+        with col_auto:
+            st.markdown("### 🚀 Acción de Automatización y Empaque")
             
-            for i, doc in enumerate(archivos_validos):
-                texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
-                payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
-                try:
-                    res_post = requests.post(URL_API_DRIVE, json=payload)
-                    respuesta = res_post.json()
-                    if respuesta.get("status") == "success":
-                        resultados_finales.extend(respuesta.get("copiados", []))
-                    else:
-                        resultados_finales.append(f"❌ Omitido (Bloqueo severo del dueño o conexión): {doc['nombre']}")
-                except Exception as e:
-                    resultados_finales.append(f"❌ Omitido (Archivo inaccesible o restringido): {doc['nombre']}")
-                    
-                barra_progreso.progress((i + 1) / len(archivos_validos))
+            # Edición Automática de Excel usando OpenPyXL
+            if inventario_id:
+                st.warning("Se detectó el 'Inventario de TI' en formato Excel. Puedes descargar el archivo con la fecha actualizada internamente a 2026 para validarlo, antes de generar las copias finales.")
+                if st.button("🪄 Descargar Inventario Actualizado (2026)"):
+                    with st.spinner("Modificando celdas del Excel en segundo plano..."):
+                        excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
+                        if excel_modificado:
+                            st.download_button(
+                                label="⬇️ Guardar Excel Actualizado",
+                                data=excel_modificado,
+                                file_name="Inventario_de_computadores_Actualizado_2026.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        else:
+                            st.error("Hubo un error al intentar modificar el Excel. Revisa los permisos.")
+
+            st.info(f"Se empaquetarán **{len(archivos_validos)}** documentos listos para la carpeta de auditoría.")
             
-            texto_estado.empty()
-            st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
-            with st.expander("Ver detalle de operaciones", expanded=True):
-                for f in resultados_finales:
-                    st.write(f"- {f}")
-            st.cache_data.clear()
+            if st.button("▶️ Generar Copias Oficiales en Drive", type="primary"):
+                st.markdown("#### Progreso de la copia:")
+                barra_progreso = st.progress(0)
+                texto_estado = st.empty()
+                resultados_finales = []
+                
+                for i, doc in enumerate(archivos_validos):
+                    texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
+                    payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
+                    try:
+                        res_post = requests.post(URL_API_DRIVE, json=payload)
+                        respuesta = res_post.json()
+                        if respuesta.get("status") == "success":
+                            resultados_finales.extend(respuesta.get("copiados", []))
+                        else:
+                            resultados_finales.append(f"❌ Omitido (Bloqueo severo del dueño o conexión): {doc['nombre']}")
+                    except Exception as e:
+                        resultados_finales.append(f"❌ Omitido (Archivo inaccesible o restringido): {doc['nombre']}")
+                        
+                    barra_progreso.progress((i + 1) / len(archivos_validos))
+                
+                texto_estado.empty()
+                st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
+                with st.expander("Ver detalle de operaciones", expanded=True):
+                    for f in resultados_finales:
+                        st.write(f"- {f}")
+                st.cache_data.clear()
