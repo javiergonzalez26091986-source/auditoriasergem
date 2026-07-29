@@ -246,7 +246,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Filtramos para NO buscar entre los que ya tienen "Actualizado"
+        # Filtramos para NO buscar entre los que ya tienen "Actualizado" y solo buscar Archivos (ignorar carpetas)
         df_archivos_base = df_archivos[(~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)) & (df_archivos['tipo'] == 'Archivo')]
 
         requisitos = {
@@ -268,10 +268,12 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         }
 
         archivos_encontrados = []
-        archivos_validos = [] # Guardaremos el par (nombre, id) para procesar uno a uno
+        archivos_validos = [] 
+        ids_procesados = set() # Memoria para no duplicar archivos en el envío a Drive
 
         st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
-        
+        st.info("💡 **Guía de Acción:** Los documentos con estado '✅ Encontrado' serán actualizados automáticamente. Los marcados como '❌ Faltante' deben ser gestionados, creados o solicitados y subidos manualmente al Drive para cumplir con la auditoría.")
+
         for req, keywords in requisitos.items():
             mask = df_archivos_base['nombre'].str.upper().str.contains('|'.join(keywords))
             coincidencias = df_archivos_base[mask]
@@ -283,7 +285,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     "Estado": "✅ Encontrado", 
                     "Archivo Base": candidato['nombre']
                 })
-                archivos_validos.append({"nombre": candidato['nombre'], "id": candidato['id']})
+                # Validamos que no se haya agregado ya este archivo por otro requerimiento
+                if candidato['id'] not in ids_procesados:
+                    archivos_validos.append({"nombre": candidato['nombre'], "id": candidato['id']})
+                    ids_procesados.add(candidato['id'])
             else:
                 archivos_encontrados.append({
                     "Requisito": req, 
@@ -292,7 +297,22 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 })
 
         df_analisis = pd.DataFrame(archivos_encontrados)
-        st.dataframe(df_analisis, use_container_width=True, hide_index=True)
+        
+        # Filtro interactivo para la tabla
+        filtro_req = st.radio(
+            "🔍 Filtrar estado de los documentos:", 
+            ["Mostrar Todos", "❌ Solo Faltantes", "✅ Solo Encontrados"], 
+            horizontal=True
+        )
+        
+        if filtro_req == "❌ Solo Faltantes":
+            df_mostrar = df_analisis[df_analisis['Estado'] == "❌ Faltante"]
+        elif filtro_req == "✅ Solo Encontrados":
+            df_mostrar = df_analisis[df_analisis['Estado'] == "✅ Encontrado"]
+        else:
+            df_mostrar = df_analisis
+            
+        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
 
         st.divider()
         st.markdown("### 🚀 Acción de Automatización")
@@ -304,13 +324,13 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             texto_estado = st.empty()
             resultados_finales = []
             
-            # MAGIA AQUÍ: Procesamos uno por uno. Si uno tumba el servidor, los demás se salvan.
+            # Procesamos uno por uno
             for i, doc in enumerate(archivos_validos):
                 texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
                 
                 payload = {
                     "action": "copiar_archivos",
-                    "fileIds": [doc['id']]  # Enviamos solo UNA id a la vez
+                    "fileIds": [doc['id']]  
                 }
                 
                 try:
