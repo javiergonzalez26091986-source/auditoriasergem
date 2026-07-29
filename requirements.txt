@@ -5,3 +5,4 @@ requests
 plotly
 streamlit-aggrid
 openpyxl
+pip install python-docx
