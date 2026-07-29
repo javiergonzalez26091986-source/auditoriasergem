@@ -1,8 +1,6 @@
 streamlit
 pandas
-openpyxl
 requests
 plotly
-streamlit-aggrid
 openpyxl
-pip install python-docx
+python-docx
