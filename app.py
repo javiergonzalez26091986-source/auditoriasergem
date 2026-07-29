@@ -65,7 +65,7 @@ st.markdown(f"""
 # -----------------------------------------------------------------------------
 # 2. CONEXIÓN API EN VIVO (GOOGLE APPS SCRIPT)
 # -----------------------------------------------------------------------------
-URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbxaBPy-9BPeDP33niNmaiIEc71h6R4BTLDXR19mI5Mz529U7nciFMcStxkrQMPRzSy_Og/exec"
+URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
 @st.cache_data(ttl=120)
 def obtener_archivos_drive():
@@ -239,34 +239,43 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
     st.markdown("""
         <div class="card-custom">
-            <div class="card-header-custom">Preparación Automática para Auditoría (ISO 27001)</div>
-            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos del formato <b>RM-4901-26</b> de Kreston. 
+            <div class="card-header-custom">Preparación Automática para Auditoría (ISO 27001/27002)</div>
+            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos exactos del formato <b>RM-4901-26</b>. 
             Identifica qué archivos ya poseemos y permite generar copias actualizadas con fecha del año en curso en la carpeta 'Auditoría actual'.</p>
         </div>
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Diccionario de requisitos del PDF de Kreston (Palabras clave para buscar en el Drive)
+        # Filtramos para NO buscar entre los que ya tienen "Actualizado" y evitar un bucle
+        df_archivos_base = df_archivos[~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)]
+
+        # Diccionario estricto basado en el PDF de requerimientos
         requisitos = {
-            "Políticas de Seguridad de la Información": ["POLITICA", "SEGURIDAD", "INFORMACION"],
+            "Políticas de Seg. Información y Habeas Data": ["POLITICA", "SEGURIDAD", "HABEAS"],
+            "Procedimientos y Capacitaciones de TI": ["CAPACITACION", "TECNOLOGIA", "DISCIPLINARIO"],
+            "Inventario y Actualización de TI": ["INVENTARIO", "ACTUALIZACION", "TI"],
+            "Procedimientos de Seg. y Hojas de Vida (Equipos)": ["HOJA DE VIDA", "EQUIPO", "PROCEDIMIENTO"],
+            "Políticas de Control de Acceso y Personal Retirado": ["ACCESO", "RETIRADO"],
+            "Contratos y Cláusulas de Confidencialidad": ["CONTRATO", "CONFIDENCIALIDAD", "CLAUSULA"],
+            "Plan de Respuesta (Emergencias) y Continuidad": ["EMERGENCIA", "CONTINUIDAD", "NEGOCIO"],
+            "Políticas de Contraseñas y Dispositivos Móviles": ["CONTRASEÑA", "DISPOSITIVO", "MOVIL"],
+            "Gestión y Notificación de Incidentes": ["INCIDENTE", "NOTIFICACION"],
+            "Inventario de Licenciamiento y Software Legal": ["LICENCIA", "SOFTWARE", "LEGAL"],
+            "Acuerdos de Servicio (Proveedores y Terceros)": ["ACUERDO", "SERVICIO", "PROVEEDOR", "TERCERO"],
+            "Copias de Seguridad (Estado y Restauración)": ["COPIA", "RESTAURACION", "RESPALDO"],
             "Matriz de Riesgos de TI": ["MATRIZ", "RIESGO"],
-            "Plan de Continuidad del Negocio": ["CONTINUIDAD", "NEGOCIO"],
-            "Copias de Seguridad (Estado)": ["COPIA", "SEGURIDAD", "REPORTE"],
-            "Procedimientos de Seguridad": ["PROCEDIMIENTO", "SEGURIDAD"],
-            "Inventario de TI y Licenciamiento": ["INVENTARIO", "LICENCIA"],
-            "Plan de contingencia (Ataque/Daño)": ["PLAN", "CONTINGENCIA"],
-            "Borrados Seguros y Altas/Bajas": ["PROCEDIMIENTO", "BORRADO", "ALTAS"],
-            "Matriz de Roles y Responsabilidades": ["ROLES", "RESPONSABILIDAD"]
+            "Informe de Pruebas de Vulnerabilidad": ["VULNERABILIDAD", "HACKING", "ETHICAL"],
+            "Sistema de Gestión (SGSI) y Planes de Acción": ["SGSI", "PLAN", "ACCION", "PREVENTIVO"]
         }
 
         archivos_encontrados = []
         ids_para_copiar = []
 
-        st.markdown("### 📋 Análisis de Requisitos Documentales")
+        st.markdown("### 📋 Análisis de Requisitos Documentales (Kreston)")
         
         for req, keywords in requisitos.items():
-            mask = df_archivos['nombre'].str.upper().str.contains('|'.join(keywords))
-            coincidencias = df_archivos[mask]
+            mask = df_archivos_base['nombre'].str.upper().str.contains('|'.join(keywords))
+            coincidencias = df_archivos_base[mask]
 
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
@@ -279,7 +288,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             else:
                 archivos_encontrados.append({
                     "Requisito": req, 
-                    "Estado": "❌ Faltante / No detectado", 
+                    "Estado": "❌ Faltante", 
                     "Archivo Base": "Requiere carga manual"
                 })
 
@@ -288,10 +297,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         st.divider()
         st.markdown("### 🚀 Acción de Automatización")
-        st.info(f"Se encontraron **{len(ids_para_copiar)}** documentos base en el sistema que cumplen con el check-list de auditoría.")
+        st.info(f"Se encontraron **{len(ids_para_copiar)}** documentos base en el sistema que cumplen con el check-list de la auditoría.")
         
         if st.button("▶️ Generar Copias Actualizadas en 'Auditoría Actual'", type="primary"):
-            with st.spinner("Conectando con Google Drive y generando copias... esto puede tomar unos segundos."):
+            with st.spinner("Conectando con Google Drive... Procesando extensiones y validando permisos..."):
                 payload = {
                     "action": "copiar_archivos",
                     "fileIds": ids_para_copiar
@@ -301,11 +310,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     respuesta = res_post.json()
                     
                     if respuesta.get("status") == "success":
-                        st.success(f"✅ ¡Éxito! Se han copiado y actualizado los nombres de {len(respuesta.get('copiados', []))} archivos en la carpeta Auditoría actual.")
-                        with st.expander("Ver detalle de archivos creados"):
+                        st.success("✅ Proceso finalizado. A continuación el detalle del estado de cada documento:")
+                        with st.expander("Ver detalle de operaciones", expanded=True):
                             for f in respuesta.get("copiados", []):
                                 st.write(f"- {f}")
-                        # Forzamos limpiar cache para que el explorador recargue los nuevos archivos
                         st.cache_data.clear()
                     else:
                         st.error(f"Error en Google Drive: {respuesta.get('message')}")
