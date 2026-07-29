@@ -163,7 +163,7 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
         if df_archivos_nube.empty:
             return pd.DataFrame(), None
             
-        match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("RM-4278-25-Matriz", case=False, na=False)]
+        match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("RM-4375-25", case=False, na=False)]
         
         if match.empty:
             st.error("No se encontró el archivo RM-4278-25-Matriz en la nube.")
