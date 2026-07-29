@@ -12,7 +12,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 
 # -----------------------------------------------------------------------------
-# 1. CONFIGURACIÓN Y ESTILOS AVANZADOS
+# 1. CONFIGURACIÓN Y ESTILOS
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Auditoría SGSI - SERGEM", 
@@ -35,14 +35,8 @@ st.markdown(f"""
     <style>
         .stApp, [data-testid="stAppViewContainer"] {{ background-color: #e9ecef !important; }}
         [data-testid="stHeader"] {{ background-color: transparent !important; }}
-        .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6, .stApp label, .stApp li {{
-            color: #2c3e50 !important;
-        }}
-        div.stButton > button {{
-            background-color: #ffffff !important; color: #002b5e !important;
-            border: 2px solid #002b5e !important; font-weight: 600 !important;
-            border-radius: 6px !important; transition: 0.3s ease;
-        }}
+        .stApp p, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6, .stApp label, .stApp li {{ color: #2c3e50 !important; }}
+        div.stButton > button {{ background-color: #ffffff !important; color: #002b5e !important; border: 2px solid #002b5e !important; font-weight: 600 !important; border-radius: 6px !important; transition: 0.3s ease; }}
         div.stButton > button p {{ color: #002b5e !important; margin: 0 !important; }}
         div.stButton > button:hover {{ background-color: #002b5e !important; border-color: #002b5e !important; }}
         div.stButton > button:hover p {{ color: #ffffff !important; }}
@@ -64,7 +58,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y HERRAMIENTAS DE EDICIÓN EXCEL
+# 2. CONEXIONES API Y EXCEL
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -74,7 +68,7 @@ def obtener_archivos_drive():
         res = requests.get(URL_API_DRIVE)
         if res.status_code == 200:
             return pd.DataFrame(res.json())
-    except Exception as e:
+    except:
         pass
     return pd.DataFrame()
 
@@ -96,86 +90,166 @@ def actualizar_fecha_inventario_excel(file_id):
             output = io.BytesIO()
             wb.save(output)
             return output.getvalue()
-    except Exception as e:
+    except:
         pass
     return None
 
 # -----------------------------------------------------------------------------
-# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (WORD)
+# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (ESPECÍFICO)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
     
-    # 3.1 FORMATO ACTAS / CONTRATOS
-    if "confidencialidad" in req or "acuerdo" in req or "contrato" in req:
+    # 1. PROCEDIMIENTO DISCIPLINARIO
+    if "disciplinario" in req:
+        return {
+            "codigo": "PR-03-002",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Establecer los lineamientos y sanciones aplicables ante el incumplimiento de las políticas del Sistema de Gestión de Seguridad de la Información (SGSI).",
+                "2. ALCANCE": "Aplica para todos los empleados, contratistas y terceros que tengan acceso a los sistemas de SERGEM Mensajería S.A.S.",
+                "3. DEFINICIONES": "• Falta Leve: Incumplimiento que no genera impacto crítico.\n• Falta Grave: Violación que expone datos sensibles o compromete la operatividad.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• El uso indebido de los activos de TI es una falta grave.\n• Toda sanción debe respetar el debido proceso y el Reglamento Interno de Trabajo.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. Reporte de la presunta falta de seguridad a RRHH y TI.\n2. Recolección de evidencia digital (logs, correos, accesos).\n3. Llamado a descargos del colaborador implicado.\n4. Aplicación de la medida disciplinaria correspondiente (amonestación, suspensión o despido).",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Reglamento Interno de Trabajo.\n• Código Sustantivo del Trabajo."
+            }
+        }
+    
+    # 2. PLAN DE ACTUALIZACIÓN DE RECURSOS TECNOLÓGICOS
+    elif "actualización" in req or "recursos" in req:
+        return {
+            "codigo": "PL-07-005",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Planificar la renovación, mantenimiento y actualización del hardware y software de la compañía para mitigar riesgos por obsolescencia tecnológica.",
+                "2. ALCANCE": "Aplica para toda la infraestructura tecnológica (servidores, redes, computadores, licencias) de SERGEM a nivel nacional.",
+                "3. DEFINICIONES": "• Obsolescencia: Caída en desuso de equipos por falta de rendimiento o soporte.\n• Vida útil: Tiempo estimado de funcionamiento óptimo de un activo TI.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• Los sistemas operativos y antivirus deben mantenerse en su última versión estable.\n• Los equipos de cómputo tienen un ciclo de renovación proyectado de 4 a 5 años.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. El área de TI realiza un análisis anual del Inventario de TI.\n2. Identificación de equipos obsoletos o licencias por vencer.\n3. Elaboración de presupuesto y solicitud de aprobación a Gerencia.\n4. Adquisición, configuración y entrega del recurso tecnológico actualizado.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Inventario de TI (Formato Excel).\n• Política de Adquisición de Tecnología."
+            }
+        }
+        
+    # 3. PROCEDIMIENTOS, PLANILLAS Y/O DOCUMENTOS (CAPACITACIONES)
+    elif "capacitaci" in req or "planilla" in req:
+        return {
+            "codigo": "PR-08-001",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Establecer la metodología para la programación, ejecución y registro de las capacitaciones y concientización en seguridad de la información.",
+                "2. ALCANCE": "Aplica para todo el personal directo e indirecto de SERGEM Mensajería S.A.S.",
+                "3. DEFINICIONES": "• Concientización: Proceso de educar al personal sobre los riesgos de seguridad.\n• Planilla de asistencia: Registro formal de participación.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• Todo empleado nuevo debe recibir inducción en el SGSI.\n• Se debe realizar al menos una capacitación general anual en ciberseguridad.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. TI y RRHH detectan las necesidades de capacitación anual.\n2. Elaboración y aprobación del cronograma de capacitaciones.\n3. Ejecución de las charlas (presenciales o virtuales).\n4. Firma de planillas de asistencia y evaluación de conocimientos adquiridos.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• FO-08-002 Formato Acta Informativa / Planilla de Asistencia.\n• Norma ISO/IEC 27001:2022."
+            }
+        }
+
+    # 4. PLAN DE RESPUESTA A EMERGENCIAS (PÉRDIDA DE INFO)
+    elif "emergencia" in req or "pérdida" in req:
+        return {
+            "codigo": "PR-07-015",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Establecer un plan de acción inmediato para mitigar, responder y recuperar la información ante incidentes críticos, ciberataques o desastres físicos.",
+                "2. ALCANCE": "Aplica para todos los sistemas críticos de SERGEM Mensajería S.A.S.",
+                "3. DEFINICIONES": "• RTO (Recovery Time Objective): Tiempo objetivo de recuperación.\n• RPO (Recovery Point Objective): Punto objetivo de recuperación (pérdida de datos máxima tolerable).",
+                "4. REGLAS GENERALES / POLÍTICAS": "• Todo evento que comprometa la disponibilidad de la información debe ser escalado a Gerencia en menos de 1 hora.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. Aislar inmediatamente los equipos afectados de la red corporativa.\n2. Activar el protocolo de contingencia notificando al Comité de Crisis.\n3. Contactar a SOLINUX para iniciar la restauración de copias de seguridad en la nube.\n4. Restaurar la operatividad y registrar el incidente en la bitácora.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• NP-05-004 Plan de Contingencia por Ataque de Virus.\n• Matriz de Riesgos de TI."
+            }
+        }
+        
+    # 5. POLÍTICA DE CONTRASEÑAS
+    elif "contraseña" in req or "clave" in req:
+        return {
+            "codigo": "PO-07-004",
+            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "secciones": {
+                "1. OBJETIVO DEL DOCUMENTO": "Definir los lineamientos técnicos para la creación, protección y rotación de contraseñas de los sistemas de información.",
+                "2. ALCANCE": "Aplica a todos los usuarios con credenciales de acceso a la red de SERGEM.",
+                "3. DIRECTRICES DE SEGURIDAD": "• Longitud mínima de 8 caracteres (mayúsculas, minúsculas, números y símbolos).\n• Cambio obligatorio de contraseña cada 90 días calendario.\n• Está estrictamente prohibido compartir credenciales, anotarlas en post-its o usar contraseñas personales (nombres, fechas de nacimiento).",
+                "4. COMPROMISOS": "Prevenir el acceso no autorizado a los sistemas mediante una autenticación robusta y auditable."
+            }
+        }
+        
+    # 6. POLÍTICA DE USO DE DISPOSITIVOS MÓVILES
+    elif "móvil" in req or "dispositivo" in req:
+        return {
+            "codigo": "PO-07-008",
+            "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
+            "secciones": {
+                "1. OBJETIVO DEL DOCUMENTO": "Establecer las normas de seguridad para el uso de dispositivos móviles (Smartphones, Laptops) que procesan información de la compañía.",
+                "2. ALCANCE": "Aplica para todos los equipos móviles corporativos y personales (BYOD) autorizados.",
+                "3. DIRECTRICES DE SEGURIDAD": "• Todo equipo móvil corporativo debe contar con cifrado de disco, PIN de bloqueo y antivirus actualizado.\n• Prohibido almacenar bases de datos de clientes en dispositivos personales no autorizados.\n• En caso de pérdida o robo, se debe reportar inmediatamente para ejecutar el borrado remoto (Wipe).",
+                "4. COMPROMISOS": "Garantizar la protección de los datos corporativos fuera del perímetro físico de las instalaciones."
+            }
+        }
+
+    # 7. PROCEDIMIENTO DE NOTIFICACIÓN DE INCIDENTES
+    elif "notificación" in req or "incidente" in req:
+        return {
+            "codigo": "PR-07-011",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Estandarizar el procedimiento para la identificación, clasificación, reporte y resolución de incidentes de seguridad de la información.",
+                "2. ALCANCE": "Aplica para todos los incidentes de TI reportados en SERGEM.",
+                "3. DEFINICIONES": "• Incidente de TI: Interrupción no planificada de un servicio.\n• Mesa de Ayuda: Punto único de contacto para reportes.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• Todo usuario tiene la obligación de reportar anomalías inmediatamente.\n• TI debe clasificar el incidente según su nivel de impacto (Alto, Medio, Bajo).",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. Detección del evento y reporte a la Mesa de Ayuda.\n2. TI registra el ticket, analiza la causa y asigna prioridad.\n3. Ejecución de actividades de contención y solución técnica.\n4. Cierre del ticket y documentación de lecciones aprendidas.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• NP-05-002 Procedimiento Solicitud de Soporte Informático."
+            }
+        }
+        
+    # 8. ACUERDOS DE SERVICIO Y CONFIDENCIALIDAD (FORMATO ACTA)
+    elif "acuerdo" in req or "servicio" in req or "confidencialidad" in req:
         return {
             "codigo": "PO-07-014",
             "tipo_firma": "CONTRATISTA / PROVEEDOR",
             "secciones": {
-                "IDENTIFICACIÓN DEL CONTRATISTA": "NOMBRE DE LA SOCIEDAD: [Ingresar Razón Social]\nNIT: [Ingresar NIT]\nREPRESENTANTE LEGAL: [Ingresar Nombre]\nNÚMERO DE IDENTIFICACIÓN: [Ingresar Cédula]",
-                "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' que reciba por parte de SERGEM SAS.\n\nSEGUNDA. La parte receptora se obliga a mantener de manera confidencial la información y a no darla a una tercera parte diferente de su equipo de trabajo autorizado.\n\nTERCERA. Para el caso del manejo de información que incluya datos personales, el CONTRATISTA dará estricto cumplimiento a las disposiciones constitucionales sobre habeas data (Ley 1581 de 2012).\n\nCUARTA. La vigencia de la presente acta será indefinida mientras exista relación comercial."
+                "IDENTIFICACIÓN DEL PROVEEDOR / TERCERO": "NOMBRE DE LA SOCIEDAD: [Ingresar Razón Social]\nNIT: [Ingresar NIT]\nREPRESENTANTE LEGAL: [Ingresar Nombre]",
+                "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a garantizar la disponibilidad de los servicios tecnológicos contratados según los Acuerdos de Nivel de Servicio (SLA) pactados.\n\nSEGUNDA. Confidencialidad: El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' de SERGEM SAS.\n\nTERCERA. Cumplimiento Legal: El proveedor dará estricto cumplimiento a las disposiciones de la Ley 1581 de 2012 (Habeas Data).\n\nCUARTA. Auditoría: SERGEM se reserva el derecho de auditar los controles de seguridad del proveedor."
             }
         }
-    
-    # 3.2 FORMATO PROCEDIMIENTOS / PLANES (Estructura detallada)
-    elif "procedimiento" in req or "plan" in req or "copia" in req or "restauración" in req:
-        if "emergencia" in req:
-            codigo = "PR-07-015"
-        elif "copia" in req or "restauración" in req:
-            codigo = "PR-07-021"
-        else:
-            codigo = "PR-07-011"
         
-        if "copia" in req or "restauración" in req:
-            texto_proc = "1. El área de TI solicita a SOLINUX la evidencia del backup diario/semanal en la nube.\n2. Semestralmente, se agenda una ventana de mantenimiento.\n3. SOLINUX ejecuta la restauración en un ambiente de pruebas.\n4. TI de SERGEM valida la integridad de los datos restaurados y firma el acta de conformidad."
-        else:
-            texto_proc = "1. Detección y reporte inmediato del evento a Mesa de Ayuda.\n2. Análisis, clasificación y asignación por parte de TI.\n3. Ejecución de actividades de contención y solución técnica.\n4. Registro en bitácora, cierre y lecciones aprendidas."
-
+    # 9. COPIAS DE SEGURIDAD Y PRUEBAS DE RESTAURACIÓN
+    elif "copia" in req or "restauración" in req or "backup" in req:
         return {
-            "codigo": codigo,
+            "codigo": "PR-07-021",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO": f"Establecer los lineamientos y actividades detalladas para dar cumplimiento a: {requisito}, garantizando la seguridad de la información en SERGEM.",
-                "2. ALCANCE": "Este documento aplica para todos los equipos, sistemas de información y personal (interno y externo) de SERGEM Mensajería S.A.S. a nivel nacional.",
-                "3. DEFINICIONES": "• SGSI: Sistema de Gestión de Seguridad de la Información.\n• Incidente: Evento adverso que compromete la confidencialidad, integridad o disponibilidad.\n• Activo: Cualquier elemento que tenga valor para la organización.",
-                "4. REGLAS GENERALES / POLÍTICAS": "• Es de carácter obligatorio el estricto cumplimiento de los pasos descritos en este procedimiento.\n• Todo desvío debe ser autorizado por la Gerencia y documentado formalmente.",
-                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": texto_proc,
-                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Norma ISO/IEC 27001:2022.\n• PO-07-001 Política Marco de Seguridad de la Información SERGEM."
+                "1. OBJETIVO": "Garantizar la disponibilidad e integridad de la información mediante la realización de copias de seguridad en la nube y pruebas de restauración periódicas.",
+                "2. ALCANCE": "Aplica para todos los servidores y repositorios de datos críticos administrados por SERGEM y su proveedor SOLINUX.",
+                "3. DEFINICIONES": "• Backup Incremental: Copia solo de los datos modificados.\n• Restauración: Proceso de devolver los datos a su estado original.",
+                "4. REGLAS GENERALES / POLÍTICAS": "• SERGEM delega la administración técnica de los backups en la nube a su proveedor certificado SOLINUX.\n• Se deben ejecutar pruebas de restauración semestrales.",
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. Ejecución automatizada de copias diarias y semanales en la nube.\n2. El área de TI solicita a SOLINUX la evidencia de ejecución exitosa.\n3. Semestralmente, se agenda una ventana para prueba de restauración en ambiente controlado.\n4. TI valida la integridad de los datos restaurados y firma el acta de conformidad.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Acta de Restauración SOLINUX."
             }
         }
-        
-    # 3.3 FORMATO CAPACITACIONES / ACTAS FORMATIVAS
-    elif "capacitaci" in req or "planillas" in req:
+
+    # 10. BASE DE DATOS PERSONAL RETIRADO
+    elif "retirado" in req or "base de datos" in req:
         return {
-            "codigo": "FO-08-002",
-            "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
+            "codigo": "PO-07-025",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "AGENDA DE LA REUNIÓN": "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta.\n\nTema principal: " + requisito,
-                "DESARROLLO DE LA REUNIÓN": "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
-                "COMPROMISOS": "La política tiene como objeto dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM."
+                "1. OBJETIVO DEL DOCUMENTO": "Mantener un registro actualizado y controlado del personal retirado para inhabilitar oportunamente sus accesos lógicos y físicos al SGSI.",
+                "2. ALCANCE": "Aplica para todos los ex-colaboradores y terceros cuyo contrato con SERGEM haya finalizado.",
+                "3. DIRECTRICES DE SEGURIDAD": "• Gestión Humana debe notificar el retiro del personal el mismo día de la novedad.\n• El área de TI inhabilitará las cuentas de correo, ERP, y accesos en un plazo máximo de 24 horas.\n• Es obligatoria la devolución de equipos y tokens antes de la liquidación.",
+                "4. COMPROMISOS": "Asegurar al 100% que ningún usuario inactivo mantenga privilegios de acceso a la información confidencial de SERGEM."
             }
         }
         
-    # 3.4 FORMATO POLÍTICAS Y REGLAMENTOS
+    # CASO POR DEFECTO (Para cualquier documento no mapeado específicamente)
     else:
-        if "contraseña" in req:
-            codigo = "PO-07-004"
-            reglas = "• Longitud mínima de 8 caracteres alfanuméricos.\n• Cambio obligatorio cada 90 días.\n• Prohibido compartir credenciales."
-        elif "móvil" in req or "dispositivo" in req:
-            codigo = "PO-07-008"
-            reglas = "• El personal debe cumplir estrictamente con los controles definidos.\n• El uso de dispositivos personales para información corporativa está restringido."
-        else:
-            codigo = "PO-07-099"
-            reglas = "• El personal debe cumplir estrictamente con los controles definidos.\n• El incumplimiento generará medidas disciplinarias según el Reglamento Interno."
-            
         return {
-            "codigo": codigo,
+            "codigo": "SG-07-099",
             "tipo_firma": "FIRMA RESPONSABLE / APROBADOR",
             "secciones": {
-                "1. OBJETIVO DEL DOCUMENTO": f"Establecer la política corporativa para regular y controlar: {requisito.lower()}.",
-                "2. ALCANCE": "Aplica para todos los empleados y contratistas de SERGEM Mensajería S.A.S.",
-                "3. DIRECTRICES DE SEGURIDAD": reglas,
-                "4. COMPROMISOS": "Garantizar la actualización constante y el resguardo de la información según la norma ISO 27001."
+                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos, políticas y controles aplicables a: {requisito.title()}.",
+                "2. ALCANCE": "Aplica para todos los procesos, colaboradores y proveedores de SERGEM Mensajería S.A.S.",
+                "3. DIRECTRICES DE SEGURIDAD": "• El personal debe cumplir estrictamente con los controles definidos por la norma ISO 27001.\n• El incumplimiento generará las respectivas medidas correctivas y disciplinarias.",
+                "4. COMPROMISOS": "Garantizar la mejora continua, la confidencialidad y el resguardo de la información de la compañía."
             }
         }
 
