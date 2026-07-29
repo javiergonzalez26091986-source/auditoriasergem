@@ -1,111 +1,206 @@
 import streamlit as st
 import pandas as pd
+import requests
 
-# 1. CONFIGURACIÓN DE PÁGINA (Ocultando la barra lateral por defecto)
+# -----------------------------------------------------------------------------
+# 1. CONFIGURACIÓN DE LA PÁGINA (STREAMLIT)
+# -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="SGSI - SERGEM",
+    page_title="Auditoría SGSI - SERGEM",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
+# -----------------------------------------------------------------------------
 # 2. INYECCIÓN DE HTML5, CSS3 Y BOOTSTRAP 5
+# -----------------------------------------------------------------------------
 st.markdown("""
-    <!-- Importar Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <style>
-        /* Ocultar la marca de agua y UI genérica de Streamlit */
+        /* Ocultar UI nativa de Streamlit */
         #MainMenu {visibility: hidden;}
         header {visibility: hidden;}
         footer {visibility: hidden;}
-        [data-testid="collapsedControl"] {display: none;}
-        .block-container {padding-top: 0rem; padding-bottom: 0rem; max-width: 100%; padding-left: 0; padding-right: 0;}
         
-        /* Estilos Corporativos Personalizados */
-        body {background-color: #f4f6f9;}
-        .navbar-custom {background-color: #003366;}
-        .navbar-brand {color: #ffffff !important; font-weight: bold; font-size: 1.5rem;}
-        .nav-link {color: #e0e0e0 !important; font-weight: 500;}
-        .nav-link:hover {color: #ffffff !important;}
+        /* Ajustar contenedor principal */
+        .block-container {padding-top: 0rem; padding-bottom: 0rem; max-width: 95%;}
+        body {background-color: #f8f9fa;}
         
-        .dashboard-container {padding: 2rem;}
+        /* Navbar Corporativa */
+        .navbar-custom {background-color: #002b5e; padding: 15px;}
+        .navbar-brand {color: #ffffff !important; font-weight: bold; font-size: 1.6rem; margin-left: 15px;}
         
+        /* Tarjetas de Módulos (Cards) */
         .card-custom {
             border: none; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
-            background: #ffffff;
-            margin-bottom: 1.5rem;
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08); 
+            background: #ffffff; 
+            margin-bottom: 2rem; 
+            padding: 25px;
         }
         .card-header-custom {
             background-color: #ffffff; 
-            border-bottom: 2px solid #003366; 
-            font-weight: 700; 
-            color: #003366;
-            padding: 1rem 1.5rem;
-            border-radius: 8px 8px 0 0;
+            border-bottom: 3px solid #002b5e; 
+            font-weight: 800; 
+            color: #002b5e; 
+            padding-bottom: 10px; 
+            margin-bottom: 20px; 
+            font-size: 1.4rem;
         }
-        .metric-value {font-size: 2rem; font-weight: bold; color: #28a745;}
+        
+        /* iframe del PDF */
+        .pdf-frame {border: 1px dashed #cccccc; border-radius: 8px;}
     </style>
+    
+    <!-- Navbar HTML -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">🛡️ SERGEM Mensajería S.A.S. - Portal de Auditoría SGSI 2026</a>
+      </div>
+    </nav>
+    <br>
 """, unsafe_allow_html=True)
 
-# 3. MAQUETACIÓN DE LA BARRA DE NAVEGACIÓN (NAVBAR)
-navbar = """
-<nav class="navbar navbar-expand-lg navbar-custom">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">
-      🛡️ SERGEM Mensajería - SGSI 2026
-    </a>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="#">Panel General</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Auditoría Kreston</a></li>
-        <li class="nav-item"><a class="nav-link" href="#">Cierre 2025</a></li>
-      </ul>
-    </div>
-  </div>
-</nav>
-"""
-st.markdown(navbar, unsafe_allow_html=True)
+# -----------------------------------------------------------------------------
+# 3. CONEXIÓN API EN VIVO (GOOGLE APPS SCRIPT -> DRIVE)
+# -----------------------------------------------------------------------------
+# URL de tu despliegue de Apps Script
+URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbwUfREwwrhpFdQoTnFdW5KMGUlMBBHaZ9vtR-RtVgeT4OPxvXgh1Ak1_VktrvXyPGW9UA/exec"
 
-# 4. ESTRUCTURA DEL CONTENIDO PRINCIPAL (GRID BOOTSTRAP)
-st.markdown('<div class="dashboard-container">', unsafe_allow_html=True)
+@st.cache_data(ttl=120) # Se refresca automáticamente cada 2 minutos
+def obtener_archivos_drive():
+    try:
+        response = requests.get(URL_API_DRIVE)
+        if response.status_code == 200:
+            datos = response.json()
+            return pd.DataFrame(datos)
+        else:
+            st.error("Error al conectar con la API de Google Drive.")
+    except Exception as e:
+        st.error(f"Fallo de conexión: {e}")
+    return pd.DataFrame()
 
-# Crear dos columnas usando las herramientas nativas de Streamlit pero con estilo CSS
-col1, col2 = st.columns([1, 3])
+df_archivos = obtener_archivos_drive()
 
-with col1:
+def buscar_id_archivo(palabra_clave):
+    """Busca un archivo en el DataFrame devuelto por la API usando una palabra clave."""
+    if not df_archivos.empty:
+        resultado = df_archivos[df_archivos['nombre'].str.contains(palabra_clave, case=False, na=False)]
+        if not resultado.empty:
+            return resultado.iloc[0]['id']
+    return None
+
+def mostrar_pdf_drive(file_id):
+    """Renderiza el PDF embebido directamente desde Drive."""
+    url = f"https://drive.google.com/file/d/{file_id}/preview"
+    iframe = f'<iframe class="pdf-frame" src="{url}" width="100%" height="700"></iframe>'
+    st.markdown(iframe, unsafe_allow_html=True)
+
+@st.cache_data(ttl=120)
+def cargar_excel_observaciones(file_id):
+    """Descarga y lee la matriz de Excel. Se configuran las filas (skiprows) según tu formato."""
+    url = f'https://drive.google.com/uc?id={file_id}&export=download'
+    # El EDA demostró que los encabezados reales de la matriz de Kreston empiezan en la fila 16 (índice 15)
+    df = pd.read_excel(url, engine='openpyxl', skiprows=15)
+    return df
+
+# -----------------------------------------------------------------------------
+# 4. BARRA LATERAL (NAVEGACIÓN DE MÓDULOS KRESTON)
+# -----------------------------------------------------------------------------
+st.sidebar.markdown('### 🗂️ Módulos de Evaluación')
+
+opciones = [
+    "🏠 Inicio y Sincronización",
+    "1️⃣ Políticas de Seguridad",
+    "2️⃣ Gestión de Activos de TI",
+    "3️⃣ Seguridad en RRHH",
+    "4️⃣ Continuidad y Respaldos",
+    "5️⃣ Cumplimiento Legal",
+    "📊 6. Cierre Hallazgos 2025"
+]
+seleccion = st.sidebar.radio("Seleccione el componente:", opciones)
+
+# -----------------------------------------------------------------------------
+# 5. LÓGICA DE VISTAS (PÁGINAS)
+# -----------------------------------------------------------------------------
+if seleccion == "🏠 Inicio y Sincronización":
     st.markdown("""
-    <div class="card card-custom">
-        <div class="card-header-custom">Módulos de Auditoría</div>
-        <div class="card-body">
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">1. Políticas de Seguridad</li>
-                <li class="list-group-item">2. Gestión de Activos</li>
-                <li class="list-group-item">3. Recursos Humanos</li>
-                <li class="list-group-item">4. Matriz de Riesgos</li>
-            </ul>
+        <div class="card-custom">
+            <div class="card-header-custom">Estado del Sistema SGSI</div>
+            <p style="font-size: 1.1rem;">Bienvenido al portal oficial de auditoría de SERGEM Mensajería S.A.S. 
+            El sistema está conectado en tiempo real al repositorio documental seguro.</p>
         </div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    col_btn, col_info = st.columns([1, 3])
+    with col_btn:
+        if st.button("🔄 Forzar Sincronización"):
+            st.cache_data.clear()
+            st.success("✅ Datos sincronizados con Drive.")
+    
+    with col_info:
+        st.info(f"Archivos y carpetas detectados en la nube: **{len(df_archivos)}**")
 
-with col2:
+    if not df_archivos.empty:
+        with st.expander("Ver índice de archivos detectados (Logs)"):
+            st.dataframe(df_archivos[['nombre', 'tipo', 'ruta']], use_container_width=True)
+
+elif seleccion == "1️⃣ Políticas de Seguridad":
+    st.markdown('<div class="card-custom"><div class="card-header-custom">Módulo: Políticas de Seguridad</div></div>', unsafe_allow_html=True)
+    
+    # Busca la política en tiempo real. 
+    id_pdf = buscar_id_archivo("Politica") 
+    if id_pdf:
+        mostrar_pdf_drive(id_pdf)
+    else:
+        st.warning("⚠️ No se detectó un archivo con la palabra 'Politica' en el Google Drive. Súbalo para visualizarlo automáticamente.")
+
+elif seleccion == "📊 6. Cierre Hallazgos 2025":
     st.markdown("""
-    <div class="card card-custom">
-        <div class="card-header-custom">Visor de Documentos Oficiales</div>
-        <div class="card-body">
-            <h5 class="card-title">Seleccione un documento en el panel izquierdo</h5>
-            <p class="card-text text-muted">La documentación se sincroniza en tiempo real con el repositorio seguro (Google Drive).</p>
-            <hr>
-            <!-- Aquí embeberemos el PDF dinámicamente -->
-            <div style="text-align: center; padding: 40px; background-color: #f8f9fa; border: 1px dashed #cccccc;">
-                <p>Área de previsualización (iframe)</p>
-            </div>
+        <div class="card-custom">
+            <div class="card-header-custom">Matriz de Observaciones e Indicadores (RM-4278)</div>
+            <p>Control automatizado de hallazgos de la vigencia anterior.</p>
         </div>
-    </div>
     """, unsafe_allow_html=True)
+    
+    id_excel = buscar_id_archivo("Matriz de Observaciones")
+    if id_excel:
+        try:
+            df_obs = cargar_excel_observaciones(id_excel)
+            
+            # Limpieza básica para evitar filas vacías del Excel
+            df_obs = df_obs.dropna(subset=['OBSERVACIÓN', 'ESTADO'])
+            
+            # 1. Tabla de datos
+            st.dataframe(
+                df_obs[['COMPONENTE', 'OBSERVACIÓN', 'ESTADO', 'COMO FUE SUBSANADO (ACTIVIDAD REALIZADA)']], 
+                use_container_width=True, 
+                hide_index=True
+            )
+            
+            # 2. Gráfico Dinámico con Columnas
+            st.markdown('<br><h4 style="color:#002b5e;">Estado de Cierre de Observaciones</h4>', unsafe_allow_html=True)
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                conteo_estados = df_obs['ESTADO'].value_counts()
+                st.dataframe(conteo_estados, use_container_width=True)
+            with col2:
+                st.bar_chart(conteo_estados, color="#28a745")
+                
+        except Exception as e:
+            st.error(f"Error procesando los datos del Excel: {e}")
+    else:
+        st.warning("⚠️ No se encontró la Matriz de Observaciones en el Drive.")
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# (Aquí conectaremos luego Pandas y los IDs del Excel)
+else:
+    # Plantilla por defecto para los demás módulos mientras los construyes
+    titulo_modulo = seleccion[4:] # Quita el emoji y el número
+    st.markdown(f"""
+        <div class="card-custom">
+            <div class="card-header-custom">{titulo_modulo}</div>
+            <p>Sincronización en curso con Google Drive. Suba los documentos correspondientes a este módulo.</p>
+        </div>
+    """, unsafe_allow_html=True)
