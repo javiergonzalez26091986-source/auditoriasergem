@@ -247,7 +247,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
     if not df_archivos.empty:
         # Filtramos para NO buscar entre los que ya tienen "Actualizado"
-        df_archivos_base = df_archivos[~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)]
+        df_archivos_base = df_archivos[(~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)) & (df_archivos['tipo'] == 'Archivo')]
 
         requisitos = {
             "Políticas de Seg. Información y Habeas Data": ["POLITICA", "SEGURIDAD", "HABEAS"],
