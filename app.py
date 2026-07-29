@@ -65,7 +65,7 @@ st.markdown(f"""
 # -----------------------------------------------------------------------------
 # 2. CONEXIÓN API EN VIVO (GOOGLE APPS SCRIPT)
 # -----------------------------------------------------------------------------
-URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzweZxYEYWicu6HSk7bS7GPZF0nOejSUMAfLneLQd1NTAd4aF5grwo97V4XeweY43wJvw/exec"
+URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
 @st.cache_data(ttl=120)
 def obtener_archivos_drive():
