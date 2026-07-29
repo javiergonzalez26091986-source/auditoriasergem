@@ -148,7 +148,7 @@ elif seleccion == "📁 Explorador Documental Completo":
         st.error("No se encontraron archivos en la sincronización.")
 
 # -----------------------------------------------------------------------------
-# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA 
+# 5. MÓDULO: NOVEDADES AUDITORÍA PASADA (NUEVA LÓGICA DINÁMICA)
 # -----------------------------------------------------------------------------
 elif seleccion == "📊 Novedades Auditoría Pasada":
     st.markdown("""
@@ -163,37 +163,77 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
         if df_archivos_nube.empty:
             return pd.DataFrame(), None
             
-        match = df_archivos_nube[df_archivos_nube['nombre'].str.contains("RM-4375-25", case=False, na=False)]
+        # 1. Búsqueda por palabra clave general (No depende del número de formato)
+        mask = df_archivos_nube['nombre'].str.contains("Matriz de Observaciones", case=False, na=False)
+        archivos_matriz = df_archivos_nube[mask & (df_archivos_nube['tipo'] == 'Archivo')]
         
-        if match.empty:
-            st.error("No se encontró el archivo RM-4278-25-Matriz en la nube.")
+        if archivos_matriz.empty:
+            st.error("No se encontró ningún archivo de matriz de observaciones en la nube.")
             return pd.DataFrame(), None 
             
-        file_id = match.iloc[0]['id']
+        # Toma el primer archivo que coincida
+        candidato = archivos_matriz.iloc[0]
+        file_id = candidato['id']
         url_descarga = f"https://drive.google.com/uc?export=download&id={file_id}"
         
         try:
-            df = pd.read_excel(url_descarga, sheet_name='AÑO', header=15)
-            df = df.iloc[1:].copy()
+            # 2. Leer siempre la primera pestaña (sheet_name=0) para evitar errores si le cambian el nombre
+            df = pd.read_excel(url_descarga, sheet_name=0, header=15)
             
-            columnas = ['NOMBRE DE INFORME O AUDITORIA', 'COMPONENTE', 'OBSERVACIÓN', 'ESTADO', 'TIPO', 'COMO FUE SUBSANADO (ACTIVIDAD REALIZADA)']
-            df_clean = df[columnas].copy()
+            # Limpiamos saltos de línea en los nombres de las columnas
+            df.columns = df.columns.astype(str).str.replace('\n', ' ').str.strip()
             
-            df_clean = df_clean.rename(columns={
-                'NOMBRE DE INFORME O AUDITORIA': 'Informe',
-                'COMPONENTE': 'Componente',
-                'OBSERVACIÓN': 'Observación',
-                'ESTADO': 'Estado',
-                'TIPO': 'Tipo',
-                'COMO FUE SUBSANADO (ACTIVIDAD REALIZADA)': 'Subsanación (Actividad)'
-            })
+            # 3. Mapeo dinámico de columnas por si el auditor cambia los nombres un poco
+            col_informe = next((col for col in df.columns if 'INFORME' in col.upper()), None)
+            col_componente = next((col for col in df.columns if 'COMPONENTE' in col.upper()), None)
+            col_observacion = next((col for col in df.columns if 'OBSERVACIÓN' in col.upper() or 'OBSERVACION' in col.upper()), None)
+            col_subsanacion = next((col for col in df.columns if 'COMO FUE SUBSANADO' in col.upper() or 'ACTIVIDAD' in col.upper()), None)
+            col_estado = next((col for col in df.columns if 'ESTADO' in col.upper()), None)
             
-            df_clean = df_clean.dropna(subset=['Observación'])
-            df_clean['Estado'] = df_clean['Estado'].fillna('SIN ESTADO')
+            datos_limpios = []
             
+            if col_observacion:
+                for idx, row in df.iterrows():
+                    obs = str(row.get(col_observacion)).strip()
+                    # Ignorar filas de subtítulos (como SI / NO) o vacías
+                    if pd.isna(row.get(col_observacion)) or obs.upper() in ['', 'NAN', 'OBSERVACIÓN', 'OBSERVADA']:
+                        continue
+                        
+                    estado = 'SIN ESTADO'
+                    
+                    # Lógica inteligente para saber si está subsanada leyendo las "X" en la matriz de Kreston
+                    if col_estado and pd.notna(row.get(col_estado)):
+                        estado = str(row[col_estado]).upper()
+                    elif 'SUBSANADO' in df.columns:
+                        idx_subs = df.columns.get_loc('SUBSANADO')
+                        val_si = str(row.iloc[idx_subs]).strip().upper()
+                        # La columna siguiente suele ser la del "NO"
+                        val_no = str(row.iloc[idx_subs + 1]).strip().upper() if (idx_subs + 1) < len(df.columns) else ''
+                        
+                        if val_si == 'X':
+                            estado = 'SUBSANADA'
+                        elif val_no == 'X':
+                            estado = 'NO SUBSANADA'
+
+                    actividad = 'Sin actividad registrada'
+                    if col_subsanacion and pd.notna(row.get(col_subsanacion)):
+                        val_act = str(row[col_subsanacion]).strip()
+                        if val_act.upper() not in ['', 'NAN']:
+                            actividad = val_act
+
+                    datos_limpios.append({
+                        'Informe': str(row.get(col_informe, 'N/A')),
+                        'Componente': str(row.get(col_componente, 'N/A')),
+                        'Observación': obs,
+                        'Estado': estado,
+                        'Subsanación (Actividad)': actividad
+                    })
+                    
+            df_clean = pd.DataFrame(datos_limpios)
             return df_clean, file_id 
+            
         except Exception as e:
-            st.error(f"Error al intentar leer las pestañas del archivo: {e}")
+            st.error(f"Error al procesar el archivo: {e}")
             return pd.DataFrame(), None
 
     df_nov, matrix_file_id = cargar_matriz_observaciones(df_archivos)
