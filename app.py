@@ -12,7 +12,7 @@ import unicodedata
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, PageBreak, Flowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
@@ -163,12 +163,31 @@ def remover_acentos(texto):
     return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
 
 # -----------------------------------------------------------------------------
-# 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (PDF AMPLIADO MULTIPÁGINA)
+# 3. CLASE AUXILIAR PARA EMPUJAR FIRMAS AL FINAL DE LA PÁGINA
+# -----------------------------------------------------------------------------
+class BottomPusher(Flowable):
+    def __init__(self, block_height=110):
+        super().__init__()
+        self.block_height = block_height
+
+    def wrap(self, availWidth, availHeight):
+        self.width = availWidth
+        bottom_margin = 40
+        target_space = availHeight - self.block_height - bottom_margin
+        if target_space > 10:
+            self.height = target_space
+        else:
+            self.height = 0
+        return self.width, self.height
+
+    def draw(self):
+        pass
+
+# -----------------------------------------------------------------------------
+# 4. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (PDF AMPLIADO MULTIPÁGINA)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
-    
-    # --- DOCUMENTOS AMPLIADOS Y ROBUSTOS PARA CUMPLIR CON ISO 27001 Y AUDITORÍA ---
     
     if "políticas de la seguridad" in req or "política de seguridad" in req:
         return {
@@ -273,7 +292,6 @@ def obtener_datos_qms(requisito):
             }
         }
 
-    # --- OTROS DOCUMENTOS ESTÁNDAR AMPLIADOS ---
     elif "disciplinario" in req:
         return {
             "codigo": "PR-03-002",
@@ -447,7 +465,9 @@ def generar_documento_pdf(requisito):
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    elements.append(Spacer(1, 0.1*inch))
+    # EMPUJAR LOS RECUADROS DE FIRMA AL FINAL DE LA HOJA AUTOMÁTICAMENTE
+    elements.append(BottomPusher(block_height=100))
+
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
         sig_data = [
             [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
@@ -472,7 +492,7 @@ def generar_documento_pdf(requisito):
     return output.getvalue()
 
 # -----------------------------------------------------------------------------
-# 4. ESTADO DE SESIÓN E INTERFAZ STREAMLIT
+# 5. ESTADO DE SESIÓN E INTERFAZ STREAMLIT
 # -----------------------------------------------------------------------------
 df_archivos = obtener_archivos_drive()
 
@@ -659,13 +679,11 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Se restringe la evaluación EXCLUSIVAMENTE a la carpeta "Auditoría actual"
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
             (df_archivos['ruta'].str.contains('Auditoría actual', case=False, na=False))
         ].copy()
         
-        # Normalizar los nombres (sin acentos ni mayúsculas) para búsqueda perfecta
         df_archivos_base['nombre_norm'] = df_archivos_base['nombre'].apply(remover_acentos)
 
         requisitos = {
@@ -677,7 +695,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             "Plan de actualización de los recursos tecnológicos": ["ACTUALIZACION", "RECURSOS"],
             "Procedimientos de seguridad": ["PROCEDIMIENTOS", "SEGURIDAD"], 
             "Hoja de vida de los equipos de cómputo y servidores": ["HOJA", "VIDA"],
-            "Políticas de control de acceso": ["CONTROL", "ACCESO"], # <-- Corregido aquí para detectar "control_acceso"
+            "Políticas de control de acceso": ["CONTROL", "ACCESO"],
             f"Base de datos, personal retirado {ANIO_ACTUAL}": ["RETIRADO"],
             "Contratos y cláusulas de confidencialidad": ["CONFIDENCIALIDAD"],
             "Plan de respuesta a emergencias (Pérdida de info.)": ["EMERGENCIA", "PERDIDA"],
@@ -756,7 +774,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             
         st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
         
-        # --- VALIDADOR DE ARCHIVOS SOBRANTES (EXCLUSIVO CARPETA ACTUAL) ---
         nombres_validos = [d['nombre'] for d in archivos_validos]
         if inventario_id:
             nombres_validos.append(df_archivos_base[df_archivos_base['id'] == inventario_id].iloc[0]['nombre'])
