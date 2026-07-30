@@ -89,7 +89,6 @@ def actualizar_fecha_inventario_excel(file_id):
     
     for url in urls_descarga:
         try:
-            # Cabecera simulando un navegador para evitar bloqueos de Google Drive
             headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
             r = requests.get(url, headers=headers, timeout=15)
             
@@ -288,7 +287,6 @@ def obtener_datos_qms(requisito):
         }
         
     else:
-        # Aseguramiento ante la eliminación de CUALQUIER documento del Drive.
         cod_aleatorio = random.randint(10, 99)
         return {
             "codigo": f"SG-07-0{cod_aleatorio}",
@@ -608,14 +606,11 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
                 
-                # AISLAMIENTO ESTRICTO PARA EL EXCEL: 
-                # Si el archivo es un excel y contiene "Inventario", lo sacamos por completo de la lista de copias genéricas.
                 es_excel_inventario = "INVENTARIO" in candidato['nombre'].upper() and candidato['nombre'].endswith(('.xls', '.xlsx'))
                 
                 if es_excel_inventario: 
                     estado = "⚙️ Encontrado (Editable)"
                     inventario_id = candidato['id']
-                    # NO se agrega a archivos_validos
                 else:
                     estado = "✅ Encontrado"
                     if candidato['id'] not in ids_procesados:
@@ -695,11 +690,14 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
                     try:
                         res_post = requests.post(URL_API_DRIVE, json=payload)
-                        respuesta = res_post.json()
-                        if respuesta.get("status") == "success": 
-                            resultados_finales.extend(respuesta.get("copiados", []))
-                        else: 
-                            resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
+                        if res_post.status_code == 200:
+                            respuesta = res_post.json()
+                            if respuesta.get("status") == "success": 
+                                resultados_finales.extend(respuesta.get("copiados", []))
+                            else: 
+                                resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
+                        else:
+                            resultados_finales.append(f"❌ Falló conexión: {doc['nombre']}")
                     except Exception as e:
                         resultados_finales.append(f"❌ Omitido (Archivo inaccesible): {doc['nombre']}")
                     
@@ -717,14 +715,23 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                             "action": "subir_archivo",
                             "nombre": "Inventario de computadores - Actualizado 2026.xlsx",
                             "base64": excel_b64,
-                            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         }
+                        
                         try:
                             res_excel = requests.post(URL_API_DRIVE, json=payload_excel)
                             if res_excel.status_code == 200:
-                                resultados_finales.append("✅ Inventario de computadores - Actualizado 2026.xlsx (Generado y subido al Drive con registros nuevos)")
+                                try:
+                                    respuesta_json = res_excel.json()
+                                    if respuesta_json.get("status") == "success":
+                                        resultados_finales.append("✅ Inventario de computadores - Actualizado 2026.xlsx subido (Revisa 'Mi unidad' si no está en la carpeta actual).")
+                                    else:
+                                        msg = respuesta_json.get("message", "Desconocido")
+                                        resultados_finales.append(f"❌ El Drive rechazó la subida del Excel: {msg}")
+                                except:
+                                    resultados_finales.append("⚠️ El Drive contestó, pero la respuesta no fue válida.")
                             else:
-                                resultados_finales.append("⚠️ Excel generado localmente, pero falló la subida al Drive.")
+                                resultados_finales.append(f"❌ Fallo HTTP {res_excel.status_code} al subir el Excel.")
                         except Exception as e:
                             resultados_finales.append(f"⚠️ Error de conexión al subir el Excel: {e}")
                     else:
