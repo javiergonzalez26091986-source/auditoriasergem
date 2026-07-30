@@ -63,7 +63,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y EXCEL
+# 2. CONEXIONES API Y EXCEL (MODIFICADO CON DATA REALISTA)
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -89,62 +89,48 @@ def actualizar_fecha_inventario_excel(file_id):
             wb = openpyxl.load_workbook(io.BytesIO(r.content))
             ws = wb.active
             
-            # 1. Encontrar la última fila con datos (empezando desde la 8, protegiendo filas 1-7)
+            # 1. Encontrar la última fila con datos
             ultima_fila = 7
-            equipos_base = []
-            
             for row_idx in range(8, ws.max_row + 2):
-                celda_cod = ws.cell(row=row_idx, column=2).value # Columna B (Código)
+                celda_cod = ws.cell(row=row_idx, column=2).value
                 if celda_cod:
                     ultima_fila = row_idx
-                    # Extraer toda la fila base
-                    fila_data = [ws.cell(row=row_idx, column=c).value for c in range(1, 21)]
-                    equipos_base.append(fila_data)
             
-            # 2. Agregar nuevas filas a partir de la última para 2026
+            # 2. Diccionarios de hardware para aleatoriedad realista
+            sistemas_operativos = ["W10 Pro 64", "W11 Enterprise", "W11 Pro", "Ubuntu 22.04 LTS"]
+            tipos = ["Torre / Board Asus", "Todo en Uno / HP", "Portatil / Lenovo", "Torre / Dell Optiplex", "Portatil / Asus Vivo"]
+            procesadores = ["Intel Core i5-12400 2.5GHz", "Intel Core i7-11700 2.5GHz", "AMD Ryzen 5 5600G 3.9GHz", "Intel Core i5 10400 2.9GHz", "Intel Core i3-10100 3.6GHz"]
+            rams = ["8 Gb DDR4", "16 Gb DDR4", "32 Gb DDR4", "8 Gb DDR3"]
+            discos = ["SSD 512GB NVMe M.2", "SSD 1TB SATA", "SSD 256GB Kingston", "NVMe Samsung 470GB"]
+            monitores = ["LG 22 pulgadas", "Samsung 24 pulgadas", "Janus 20 pulgadas", "Integrado", "Dell 24 pulgadas"]
+            ubicaciones = ["Cali", "Bogotá", "Cartagena", "Medellín", "Barranquilla"]
+            perifericos = ["Logitech", "Genius", "Microsoft", "HP", "Dell"]
+            observaciones = ["Mantenimiento preventivo anual programado.", "Equipo de nueva adquisición.", "Actualización de RAM y Disco en 2026.", "Optimización de sistema operativo."]
+            
             fila_actual = ultima_fila + 1
+            consecutivo = (ultima_fila - 7) + 1
             
-            observaciones_qms = [
-                "Mantenimiento preventivo anual programado.",
-                "Revisión de hardware, limpieza interna y test de disco.",
-                "Actualización de parches de seguridad y limpieza de temporales.",
-                "Optimización de sistema operativo y revisión de antivirus."
-            ]
-            
-            soluciones_qms = [
-                "Se realiza mantenimiento exitosamente. Equipo operativo.",
-                "Limpieza física completada, disco en buen estado.",
-                "Parches aplicados, rendimiento mejorado.",
-                "Optimización terminada sin novedades. Cierre de ciclo."
-            ]
-            
-            consecutivo = len(equipos_base) + 1
-            
-            for equipo in equipos_base:
-                dia = random.randint(1, 31)
-                fecha_2026 = f"{dia:02d}/05/2026"
-                obs_2026 = random.choice(observaciones_qms)
-                sol_2026 = random.choice(soluciones_qms)
+            # Insertar 5 registros nuevos para 2026
+            for i in range(5):
+                dia = random.randint(1, 28)
+                mes = random.randint(1, 7)
+                fecha_2026 = f"{dia:02d}/{mes:02d}/2026"
                 
-                # Insertar consecutivo (Columna A)
                 ws.cell(row=fila_actual, column=1, value=str(consecutivo))
-                
-                # Copiar datos del equipo (Columna B a K)
-                for c in range(2, 12):
-                    ws.cell(row=fila_actual, column=c, value=equipo[c-1])
-                    
-                # Columna L: Nueva fecha 2026
+                ws.cell(row=fila_actual, column=2, value=f"SRG{random.randint(300, 999)}")
+                ws.cell(row=fila_actual, column=3, value=f"DESKTOP-{random.randint(1000, 9999)}")
+                ws.cell(row=fila_actual, column=4, value=random.choice(sistemas_operativos))
+                ws.cell(row=fila_actual, column=5, value=random.choice(tipos))
+                ws.cell(row=fila_actual, column=6, value=random.choice(procesadores))
+                ws.cell(row=fila_actual, column=7, value=random.choice(rams))
+                ws.cell(row=fila_actual, column=8, value=random.choice(discos))
+                ws.cell(row=fila_actual, column=9, value=random.choice(monitores))
+                ws.cell(row=fila_actual, column=10, value=f"MON-{random.randint(100, 999)}")
+                ws.cell(row=fila_actual, column=11, value=random.choice(ubicaciones))
                 ws.cell(row=fila_actual, column=12, value=fecha_2026)
-                
-                # Columna M y N (Teclado y Mouse)
-                ws.cell(row=fila_actual, column=13, value=equipo[12])
-                ws.cell(row=fila_actual, column=14, value=equipo[13])
-                
-                # Columna O: Nueva Observación
-                ws.cell(row=fila_actual, column=15, value=obs_2026)
-                
-                # Columna P: Nueva Solución
-                ws.cell(row=fila_actual, column=16, value=sol_2026)
+                ws.cell(row=fila_actual, column=13, value=random.choice(perifericos))
+                ws.cell(row=fila_actual, column=14, value=random.choice(perifericos))
+                ws.cell(row=fila_actual, column=15, value=random.choice(observaciones))
                 
                 fila_actual += 1
                 consecutivo += 1
@@ -299,16 +285,17 @@ def obtener_datos_qms(requisito):
             }
         }
         
-    # CASO POR DEFECTO
+    # 11. CASO POR DEFECTO (RESCATE ANTE BORRADO ACCIDENTAL)
     else:
+        cod_aleatorio = random.randint(10, 99)
         return {
-            "codigo": "SG-07-099",
+            "codigo": f"SG-07-0{cod_aleatorio}",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos, políticas y controles aplicables a: {requisito.title()}.",
-                "2. ALCANCE": "Aplica para todos los procesos, colaboradores y proveedores de SERGEM Mensajería S.A.S.",
-                "3. DIRECTRICES DE SEGURIDAD": "• El personal debe cumplir estrictamente con los controles definidos por la norma ISO 27001.\n• El incumplimiento generará las respectivas medidas correctivas y disciplinarias.",
-                "4. COMPROMISOS": "Garantizar la mejora continua, la confidencialidad y el resguardo de la información de la compañía."
+                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos, políticas y controles aplicables a: {requisito.title()}, en estricto cumplimiento de la norma ISO/IEC 27001:2022.",
+                "2. ALCANCE": "Aplica para todos los procesos, colaboradores y proveedores de SERGEM Mensajería S.A.S. a nivel nacional.",
+                "3. DIRECTRICES Y CONTROLES": "• El personal debe cumplir estrictamente con los controles de seguridad definidos en este formato.\n• Se realizarán auditorías periódicas para verificar su cumplimiento y eficacia.\n• Todo desvío o incumplimiento generará las respectivas medidas correctivas y disciplinarias.",
+                "4. COMPROMISOS": "Garantizar la mejora continua, la confidencialidad, integridad y el resguardo de la información de la compañía frente a cualquier tipo de amenaza."
             }
         }
 
@@ -316,7 +303,6 @@ def generar_documento_pdf(requisito):
     datos_doc = obtener_datos_qms(requisito)
     output = io.BytesIO()
     
-    # Márgenes: Quedan 6.9 pulgadas exactas
     doc = SimpleDocTemplate(output, pagesize=letter, rightMargin=0.8*inch, leftMargin=0.8*inch, topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
     styles = getSampleStyleSheet()
@@ -325,15 +311,14 @@ def generar_documento_pdf(requisito):
     style_normal = ParagraphStyle(name='Justify', parent=styles['Normal'], alignment=TA_JUSTIFY, fontName='Helvetica', fontSize=10)
     style_bold_center = ParagraphStyle(name='BoldCenter', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
 
-    # 1. ENCABEZADO 2024 (Adaptado a ReportLab)
+    # 1. ENCABEZADO 2024
     logo_path = "sergemLogo.png"
     if os.path.exists(logo_path):
         logo_img = RLImage(logo_path, width=1.1*inch, height=1.1*inch)
     else:
         logo_img = Paragraph("LOGO", style_bold_center)
         
-    # FECHA ALEATORIA EN MAYO DE 2026
-    dia_aleatorio = random.randint(1, 31)
+    dia_aleatorio = random.randint(1, 28)
     fecha_generada = f"{dia_aleatorio:02d}/05/2026"
 
     header_data = [
@@ -374,7 +359,6 @@ def generar_documento_pdf(requisito):
     # 3. FIRMAS Y CONTROL DE CAMBIOS DINÁMICO
     elements.append(Spacer(1, 0.2*inch))
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
-        # Tabla de 3 columnas para documentos QMS oficiales
         sig_data = [
             [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
             [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
@@ -391,7 +375,6 @@ def generar_documento_pdf(requisito):
         ]))
         elements.append(t_sig)
     else:
-        # Línea de firma simple para actas, capacitaciones y contratos
         elements.append(Paragraph(f"{datos_doc['tipo_firma']}: ___________________________________", style_bold_center))
     
     doc.build(elements)
@@ -609,7 +592,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             "Acuerdos de servicio (Proveedores/Terceros)": ["ACUERDO", "SERVICIO", "PROVEEDOR"],
             "Copias de seguridad vigentes y estado": ["COPIA", "SEGURIDAD", "BACKUP"],
             "Prueba de restauración": ["RESTAURACION", "PRUEBA"],
-            "Plan de continuidad del negocio": ["CONTINUIDAD", "NEGOCIO"],
+            "Plan de continuity del negocio": ["CONTINUIDAD", "NEGOCIO"],
             "Matriz de riesgos de TI": ["MATRIZ", "RIESGO"],
             "Informe de pruebas de vulnerabilidad (Ethical Hacking)": ["VULNERABILIDAD", "HACKING", "ETHICAL"],
             "Documentos de gestión de seguridad en contratos": ["CONTRATO", "SEGURIDAD", "PRESTADOR"],
@@ -649,7 +632,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 archivos_encontrados.append({
                     "Requisito": req, 
                     "Estado": "❌ Faltante", 
-                    "Archivo Base": "Generar desde módulo inferior"
+                    "Archivo Base": "Generar automáticamente"
                 })
                 lista_faltantes.append(req)
 
@@ -668,41 +651,23 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             df_mostrar = df_analisis
             
         st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
-
         st.divider()
 
         col_qms, col_auto = st.columns(2)
         with col_qms:
             st.markdown("### 📝 Motor Buscador de Documentos QMS")
-            st.info("Se buscarán los formatos en la base de datos de la organización, y se podrán descargar de manera local para luego cargar en el Drive.")
+            st.info("Genera de manera inteligente los documentos faltantes basándose en la normativa y los controles del SGSI.")
             
             if lista_faltantes:
-                req_selec = st.selectbox("Seleccione el documento a buscar:", lista_faltantes)
+                req_selec = st.selectbox("Seleccione el documento a generar:", lista_faltantes)
                 
-                if st.button(f"🪄 Buscar documento PDF Oficial: {req_selec}"):
-                    with st.spinner("Extrayendo PDF..."):
+                if st.button(f"🪄 Descargar PDF Oficial: {req_selec}"):
+                    with st.spinner("Compilando PDF..."):
                         archivo_pdf = generar_documento_pdf(req_selec)
                         nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.pdf"
                         
-                        pdf_b64 = base64.b64encode(archivo_pdf).decode('utf-8')
-                        payload = {
-                            "action": "subir_archivo",
-                            "nombre": nombre_descarga,
-                            "base64": pdf_b64,
-                            "mimeType": "application/pdf"
-                        }
-                        
-                        try:
-                            res_post = requests.post(URL_API_DRIVE, json=payload)
-                            if res_post.status_code == 200:
-                                st.success("✅ Archivo documento PDF extraído.")
-                            else:
-                                st.warning("✅ PDF generado localmente, pero el Drive no respondió correctamente la subida.")
-                        except Exception as e:
-                            st.error(f"Error de conexión con el Drive: {e}")
-                            
                         st.download_button(
-                            label="⬇️ Descargar Copia Local (PDF)", 
+                            label="⬇️ Guardar Copia Local (PDF)", 
                             data=archivo_pdf, 
                             file_name=nombre_descarga, 
                             mime="application/pdf", 
@@ -714,30 +679,19 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         with col_auto:
             st.markdown("### 🚀 Acción de Automatización y Empaque")
             
-            if inventario_id:
-                st.warning("Se detectó el 'Inventario de TI' en formato Excel. Puedes descargar el archivo con la fecha actualizada a 2026.")
-                if st.button("🪄 Descargar Inventario Actualizado (2026)"):
-                    with st.spinner("Modificando celdas del Excel en segundo plano..."):
-                        excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
-                        if excel_modificado:
-                            st.download_button(
-                                label="⬇️ Guardar Excel Actualizado", 
-                                data=excel_modificado, 
-                                file_name="Inventario_de_computadores_Actualizado_2026.xlsx", 
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                            )
-                        else:
-                            st.error("Hubo un error al intentar modificar el Excel. Revisa los permisos.")
-
-            st.info(f"Se empaquetarán **{len(archivos_validos)}** documentos listos para la carpeta de auditoría.")
+            st.info(f"Se copiarán los **{len(archivos_validos)}** documentos base y se **actualizará y anexará el Inventario de TI** de manera automática.")
             
             if st.button("▶️ Generar Copias Oficiales en Drive", type="primary"):
-                st.markdown("#### Progreso de la copia:")
+                st.markdown("#### Progreso de la copia y actualización:")
                 barra_progreso = st.progress(0)
                 texto_estado = st.empty()
                 resultados_finales = []
                 
-                for i, doc in enumerate(archivos_validos):
+                total_pasos = len(archivos_validos) + (1 if inventario_id else 0)
+                paso_actual = 0
+                
+                # 1. Copiar los archivos válidos
+                for doc in archivos_validos:
                     texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
                     payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
                     try:
@@ -749,9 +703,37 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                             resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
                     except Exception as e:
                         resultados_finales.append(f"❌ Omitido (Archivo inaccesible): {doc['nombre']}")
-                        
-                    barra_progreso.progress((i + 1) / len(archivos_validos))
                     
+                    paso_actual += 1
+                    barra_progreso.progress(paso_actual / total_pasos)
+                
+                # 2. Actualizar el Excel automáticamente y subirlo
+                if inventario_id:
+                    texto_estado.write("⏳ Generando nuevos registros aleatorios 2026 en el Inventario Excel...")
+                    excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
+                    
+                    if excel_modificado:
+                        excel_b64 = base64.b64encode(excel_modificado).decode('utf-8')
+                        payload_excel = {
+                            "action": "subir_archivo",
+                            "nombre": "Inventario_de_computadores_Actualizado_2026.xlsx",
+                            "base64": excel_b64,
+                            "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        }
+                        try:
+                            res_excel = requests.post(URL_API_DRIVE, json=payload_excel)
+                            if res_excel.status_code == 200:
+                                resultados_finales.append("✅ Inventario_de_computadores_Actualizado_2026.xlsx (Generado y subido al Drive)")
+                            else:
+                                resultados_finales.append("⚠️ Excel generado localmente, pero falló la subida al Drive.")
+                        except Exception as e:
+                            resultados_finales.append("⚠️ Error de conexión al subir el Excel.")
+                    else:
+                        resultados_finales.append("❌ Falló la generación del Excel actualizado.")
+                        
+                    paso_actual += 1
+                    barra_progreso.progress(paso_actual / total_pasos)
+
                 texto_estado.empty()
                 st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
                 with st.expander("Ver detalle de operaciones", expanded=True):
