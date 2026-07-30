@@ -757,8 +757,8 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         col_qms, col_auto = st.columns(2)
         with col_qms:
-            st.markdown("### 📝 Motor Generador de Documentos Oficiales QMS")
-            st.info("Genera de manera inteligente los documentos faltantes basándose en la normativa y los controles del SGSI.")
+            st.markdown("### 📝 Buscador de Documentos Oficiales QMS")
+            st.info("Busca de manera inteligente los documentos faltantes basándose en la normativa y los controles del SGSI y la base de datos de SERGEM.")
             
             if lista_faltantes:
                 req_selec = st.selectbox("Seleccione el documento a generar:", lista_faltantes)
