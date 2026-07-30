@@ -172,7 +172,6 @@ class BottomPusher(Flowable):
 
     def wrap(self, availWidth, availHeight):
         self.width = availWidth
-        # Margen inferior estricto de 15 puntos para garantizar que quede abajo sin salirse
         target_space = availHeight - self.block_height - 15
         self.height = max(0, target_space)
         return self.width, self.height
@@ -403,7 +402,6 @@ def generar_documento_pdf(requisito):
     datos_doc = obtener_datos_qms(requisito)
     output = io.BytesIO()
     
-    # Márgenes profesionales
     doc = SimpleDocTemplate(output, pagesize=letter, rightMargin=0.75*inch, leftMargin=0.75*inch, topMargin=0.6*inch, bottomMargin=0.6*inch)
     elements = []
     styles = getSampleStyleSheet()
@@ -441,7 +439,6 @@ def generar_documento_pdf(requisito):
     elements.append(t_header)
     elements.append(Spacer(1, 0.25*inch))
 
-    # Construcción de secciones con formato extendido multilínea
     for titulo, contenido in datos_doc['secciones'].items():
         contenido_rl = contenido.replace('\n', '<br/>')
         body_data = [
@@ -462,7 +459,6 @@ def generar_documento_pdf(requisito):
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    # EMPUJAR LAS FIRMAS AL FONDO ABSOLUTO DE LA PÁGINA
     elements.append(BottomPusher(block_height=95))
 
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
@@ -676,7 +672,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Validación ampliada a toda la carpeta principal "Auditoría" y sus subdirectorios
+        # Escaneo general en la carpeta "Auditoría" y todas sus subcarpetas
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
             (df_archivos['ruta'].str.contains('Auditoría', case=False, na=False))
@@ -825,7 +821,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     texto_estado.write(f"⏳ Evaluando y sincronizando: {doc['nombre']}...")
                     
                     archivos_mismo_nombre = df_archivos[df_archivos['nombre'] == doc['nombre']]
-                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría', case=False, na=False).any()
+                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría actual', case=False, na=False).any()
                     
                     if len(archivos_mismo_nombre) > 1 or ya_existe_en_auditoria:
                         resultados_finales.append(f"⏭️ Omitido (Ya existe en destino): {doc['nombre']}")
