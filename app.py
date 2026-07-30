@@ -163,28 +163,25 @@ def remover_acentos(texto):
     return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
 
 # -----------------------------------------------------------------------------
-# 3. CLASE AUXILIAR PARA EMPUJAR FIRMAS AL FINAL DE LA PÁGINA
+# 3. CLASE AUXILIAR PARA EMPUJAR FIRMAS AL FONDO EXACTO DE LA PÁGINA
 # -----------------------------------------------------------------------------
 class BottomPusher(Flowable):
-    def __init__(self, block_height=110):
+    def __init__(self, block_height=95):
         super().__init__()
         self.block_height = block_height
 
     def wrap(self, availWidth, availHeight):
         self.width = availWidth
-        bottom_margin = 40
-        target_space = availHeight - self.block_height - bottom_margin
-        if target_space > 10:
-            self.height = target_space
-        else:
-            self.height = 0
+        # Margen inferior estricto de 15 puntos para garantizar que quede abajo sin salirse
+        target_space = availHeight - self.block_height - 15
+        self.height = max(0, target_space)
         return self.width, self.height
 
     def draw(self):
         pass
 
 # -----------------------------------------------------------------------------
-# 4. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (PDF AMPLIADO MULTIPÁGINA)
+# 4. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN AMPLIADA Y PROFESIONAL ISO 27001)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -194,11 +191,11 @@ def obtener_datos_qms(requisito):
             "codigo": "PO-01-001",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer la declaración formal de la Dirección General de SERGEM Mensajería S.A.S. respecto al compromiso inquebrantable con la Seguridad de la Información. Este marco da cumplimiento estricto a las directrices del control A.5.1 de la norma internacional ISO/IEC 27001 y se alinea con la legislación colombiana vigente en materia de protección de datos personales y seguridad informática.",
-                "2. ALCANCE ORGANIZACIONAL": "La presente política es de mandatorio cumplimiento para todos los colaboradores directos, temporales, contratistas, prestadores de servicios y terceros que operen o tengan acceso a la infraestructura tecnológica, bases de datos, redes de comunicación y activos físicos de SERGEM a nivel nacional (Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué).",
-                "3. PRINCIPIOS RECTORES DEL SGSI": "• Confidencialidad: Garantizar que la información corporativa, logística y de clientes solo sea accesible por personal autorizado.\n• Integridad: Proteger la exactitud, completitud y validez de los datos operativos frente a alteraciones no autorizadas.\n• Disponibilidad: Asegurar que los sistemas de información, plataformas logísticas y canales de atención permanezcan accesibles ininterrumpidamente para los usuarios autorizados.",
-                "4. DIRECTRICES ESTRATÉGICAS DE LA DIRECCIÓN": "La Gerencia General y la Dirección Administrativa proveerán los recursos económicos, logísticos y tecnológicos necesarios para mantener, evaluar y mejorar continuamente el Sistema de Gestión de Seguridad de la Información (SGSI). Ningún objetivo de negocio podrá anteponerse a la seguridad de los activos de información.",
-                "5. GESTIÓN DE EXCEPCIONES Y SANCIONES": "Cualquier intento de vulneración, desviación o incumplimiento de los lineamientos descritos en esta política será calificado como falta grave y sometido de manera inmediata al Procedimiento Disciplinario interno (PR-03-002), sin perjuicio de las acciones legales penales o civiles a que haya lugar en los juzgados de la República de Colombia."
+                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer la declaración formal de la Dirección General de SERGEM Mensajería S.A.S. respecto al compromiso inquebrantable con la Seguridad de la Información. Este marco da cumplimiento estricto a las directrices del control A.5.1 de la norma internacional ISO/IEC 27001:2022, asegurando la protección integral de los activos tecnológicos, bases de datos logísticas y canales de comunicación frente a amenazas internas y externas, alineándose con la legislación colombiana vigente (Ley 1581 de 2012 y Ley 1273 de 2009).",
+                "2. ALCANCE ORGANIZACIONAL": "La presente política es de mandatorio cumplimiento para todos los colaboradores directos, personal temporal, contratistas, prestadores de servicios y terceros que operen o tengan acceso a la infraestructura tecnológica, sistemas core (Freeway), redes de datos y activos físicos de SERGEM a nivel nacional en las sedes de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
+                "3. PRINCIPIOS RECTORES DEL SGSI": "• Confidencialidad: Garantizar que la información corporativa, financiera y de clientes solo sea accesible por personal debidamente autorizado bajo el principio de privilegio mínimo.\n• Integridad: Proteger la exactitud, completitud y validez de los datos logísticos y de mensajería frente a alteraciones, suplantaciones o modificaciones no autorizadas.\n• Disponibilidad: Asegurar que los sistemas de información, bases de datos y plataformas operativas permanezcan accesibles ininterrumpidamente para los usuarios y canales de atención autorizados.",
+                "4. GOBIERNO Y ROLES DE SEGURIDAD": "La Alta Gerencia y el Comité de Seguridad de la Información son responsables de revisar anual o extraordinariamente la vigencia de este documento. El Departamento de Tecnología e Infraestructura supervisará la implementación técnica de los controles operativos, mientras que cada jefatura de área garantizará la difusión y acatamiento por parte de sus equipos de trabajo.",
+                "5. GESTIÓN DE EXCEPCIONES Y RÉGIMEN SANCIONATORIO": "Cualquier intento de vulneración, desviación o incumplimiento de los lineamientos descritos en esta política será calificado como falta grave y sometido de manera inmediata al Procedimiento Disciplinario interno (PR-03-002), sin perjuicio de las acciones legales penales o civiles a que haya lugar ante los juzgados de la República de Colombia."
             }
         }
         
@@ -207,11 +204,11 @@ def obtener_datos_qms(requisito):
             "codigo": "PR-05-010",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO OPERATIVO": "Documentar los procedimientos operativos estándar (SOP) de seguridad física y lógica aplicados en el procesamiento diario de mensajería y logística, cumpliendo con el control A.5.37 de la norma ISO/IEC 27001.",
-                "2. RESPONSABILIDADES Y ROLES": "El Departamento de Tecnología e Infraestructura, en coordinación con la Jefatura de Operaciones, es el responsable directo de vigilar la ejecución estricta de estos protocolos en cada una de las sedes de la compañía.",
-                "3. PROTOCOLOS DE ACCESO LÓGICO Y AUTENTICACIÓN": "• El acceso a los sistemas core (Freeway y bases de datos asociadas) exige autenticación robusta obligatoria mediante doble factor (2FA) y contraseñas alfanuméricas con rotación trimestral.\n• Se prohíbe terminantemente el uso de cuentas genéricas o compartidas para la ejecución de tareas operativas o administrativas.",
-                "4. SEGURIDAD EN EL PUESTO DE TRABAJO (ESCRITORIO LIMPIO)": "• Todo colaborador debe bloquear su estación de trabajo al ausentarse de su escritorio (ataque de tecla Windows + L).\n• Queda prohibido dejar documentos físicos con información de clientes, guías o datos financieros sobre escritorios o zonas comunes al finalizar la jornada laboral.",
-                "5. SEGURIDAD EN REDES Y COMUNICACIONES": "La red Wi-Fi corporativa está estrictamente segmentada. Las terminales de invitados operan en una VLAN aislada sin permisos de enrutamiento hacia los servidores de bases de datos centrales."
+                "1. OBJETIVO OPERATIVO": "Documentar los procedimientos operativos estándar (SOP) de seguridad física y lógica aplicados en el procesamiento diario de mensajería y logística, cumpliendo rigurosamente con el control A.5.37 y controles operativos de la norma ISO/IEC 27001.",
+                "2. RESPONSABILIDADES Y ROLES": "El Departamento de Tecnología e Infraestructura, en estrecha coordinación con la Jefatura de Operaciones, es el responsable directo de vigilar la ejecución estricta de estos protocolos en cada una de las sucursales de la compañía a nivel nacional.",
+                "3. PROTOCOLOS DE ACCESO LÓGICO Y AUTENTICACIÓN": "• El acceso a los sistemas core (Freeway y bases de datos asociadas) exige autenticación robusta obligatoria mediante doble factor (2FA) y credenciales alfanuméricas complejas con rotación estricta trimestral.\n• Se prohíbe terminantemente el uso de cuentas genéricas, cuentas compartidas o la post-inscripción de sesiones de usuario en estaciones de trabajo corporativas.",
+                "4. SEGURIDAD EN EL PUESTO DE TRABAJO (ESCRITORIO LIMPIO)": "• Todo colaborador tiene la obligación de bloquear su estación de trabajo al ausentarse de su escritorio mediante el comando de teclado corporativo (Windows + L).\n• Queda prohibido dejar documentos físicos con información de guías, datos de clientes o estados financieros sobre escritorios o zonas comunes al finalizar la jornada laboral o durante periodos de pausa.",
+                "5. SEGURIDAD EN REDES Y COMUNICACIONES": "La red Wi-Fi corporativa se encuentra segmentada en VLANs independientes. Las terminales de invitados operan en una red aislada sin permisos de enrutamiento hacia los servidores centrales de bases de datos."
             }
         }
         
@@ -220,10 +217,10 @@ def obtener_datos_qms(requisito):
             "codigo": "RG-08-015",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DEL CONTROL": "Estandarizar el registro sistemático del ciclo de vida, características técnicas, asignaciones, mantenimientos correctivos y preventivos del hardware de la compañía, dando cumplimiento al control A.8.1 (Inventario de activos) de la norma ISO/IEC 27001.",
-                "2. ALCANCE Y APLICABILIDAD": "Aplica de forma obligatoria a servidores, estaciones de trabajo de escritorio, computadores portátiles, impresoras y equipos de comunicación asignados al personal administrativo y operativo a nivel nacional.",
-                "3. DIRECTRICES DE GESTIÓN Y MANTENIMIENTO": "• Cada activo tecnológico posee una 'Hoja de Vida' digital vinculada al inventario maestro en Excel.\n• Toda intervención técnica, cambio de componente (memorias RAM, discos de estado sólido) o traslado de sede debe quedar registrado con fecha, descripción y cédula del técnico responsable.",
-                "4. PROTOCOLO DE BAJA Y RETIRO DE ACTIVOS": "Antes de proceder a la baja física o desecho de un equipo de cómputo, el área de TI ejecutará un borrado seguro de almacenamiento secundario (Wipe certificado mediante software especializado) para evitar la fuga o recuperación residual de datos corporativos o información sensible de clientes."
+                "1. OBJETIVO DEL CONTROL": "Estandarizar el registro sistemático del ciclo de vida, características técnicas, asignaciones, mantenimientos correctivos y preventivos del parque informático y hardware de la compañía, dando cumplimiento al control A.8.1 (Inventario de activos) de la ISO/IEC 27001.",
+                "2. ALCANCE Y APLICABILIDAD": "Aplica de forma obligatoria a servidores físicos y virtuales, estaciones de trabajo de escritorio, computadores portátiles, impresoras matriciales/térmicas y equipos de comunicación asignados al personal administrativo y operativo en todas las sedes.",
+                "3. DIRECTRICES DE GESTIÓN Y MANTENIMIENTO": "• Cada activo tecnológico posee una 'Hoja de Vida' digital vinculada al inventario maestro consolidado en Excel.\n• Toda intervención técnica, cambio de componente hardware (memorias RAM, discos de estado sólido NVMe) o traslado físico de sede debe quedar registrado con fecha exacta, descripción detallada y cédula del técnico responsable.",
+                "4. PROTOCOLO DE BAJA Y RETIRO DE ACTIVOS": "Antes de proceder a la baja física o desecho de un equipo de cómputo, el área de TI ejecutará un borrado seguro de almacenamiento secundario (Wipe certificado mediante software especializado) para evitar la recuperación residual de datos corporativos o información de clientes."
             }
         }
         
@@ -233,7 +230,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO NORMATIVO": "Asegurar el cumplimiento estricto de los derechos de propiedad intelectual, contratos de usuario final (EULA) y prevenir la instalación de software no autorizado (Control A.5.32 de la ISO/IEC 27001 y legislación sobre derechos de autor en Colombia).",
-                "2. POLÍTICA DE ADQUISICIÓN Y CONTROL": "• Ningún software comercial, libre, de código abierto (Open Source) o de prueba puede ser instalado en los equipos de SERGEM sin previa validación y aprobación escrita del Departamento de Tecnología.\n• Todos los soportes de compra, facturas electrónicas y certificados de licencias operativas se encuentran custodiados digitalmente en la carpeta de proveedores.",
+                "2. POLÍTICA DE ADQUISICIÓN Y CONTROL": "• Ningún software comercial, libre, de código abierto (Open Source) o de prueba puede ser instalado en los equipos de SERGEM sin previa validación, revisión de vulnerabilidades y aprobación escrita del Departamento de Tecnología.\n• Todos los soportes de compra, facturas electrónicas y certificados de licencias operativas se encuentran custodiados digitalmente en el repositorio central de proveedores.",
                 "3. AUDITORÍAS TRIMESTRALES DE SOFTWARE (SHADOW IT)": "El departamento de TI ejecutará de manera automatizada escaneos semestrales en las estaciones de trabajo para detectar instalaciones clandestinas o aplicaciones no autorizadas (Shadow IT), procediendo a su aislamiento y desinstalación inmediata con reporte a la Dirección Administrativa."
             }
         }
@@ -465,8 +462,8 @@ def generar_documento_pdf(requisito):
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    # EMPUJAR LOS RECUADROS DE FIRMA AL FINAL DE LA HOJA AUTOMÁTICAMENTE
-    elements.append(BottomPusher(block_height=100))
+    # EMPUJAR LAS FIRMAS AL FONDO ABSOLUTO DE LA PÁGINA
+    elements.append(BottomPusher(block_height=95))
 
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
         sig_data = [
@@ -679,9 +676,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
+        # Validación ampliada a toda la carpeta principal "Auditoría" y sus subdirectorios
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
-            (df_archivos['ruta'].str.contains('Auditoría actual', case=False, na=False))
+            (df_archivos['ruta'].str.contains('Auditoría', case=False, na=False))
         ].copy()
         
         df_archivos_base['nombre_norm'] = df_archivos_base['nombre'].apply(remover_acentos)
@@ -780,8 +778,8 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             
         df_sobrantes = df_archivos_base[~df_archivos_base['nombre'].isin(nombres_validos)][['nombre', 'ruta']]
         if not df_sobrantes.empty:
-            with st.expander(f"⚠️ Atención: Se detectaron {len(df_sobrantes)} archivos sobrantes en la carpeta actual (No requeridos)"):
-                st.warning("Estos documentos no hacen parte de la lista oficial de la auditoría Kreston en esta carpeta. Considera verificar y removerlos para evitar confusiones a la hora de presentar los soportes.")
+            with st.expander(f"⚠️ Atención: Se detectaron {len(df_sobrantes)} archivos sobrantes en la carpeta (No requeridos)"):
+                st.warning("Estos documentos no hacen parte de la lista oficial de la auditoría Kreston. Considera verificar y removerlos para evitar confusiones a la hora de presentar los soportes.")
                 st.dataframe(df_sobrantes, use_container_width=True, hide_index=True)
                 
         st.divider()
@@ -827,7 +825,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     texto_estado.write(f"⏳ Evaluando y sincronizando: {doc['nombre']}...")
                     
                     archivos_mismo_nombre = df_archivos[df_archivos['nombre'] == doc['nombre']]
-                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría actual', case=False, na=False).any()
+                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría', case=False, na=False).any()
                     
                     if len(archivos_mismo_nombre) > 1 or ya_existe_en_auditoria:
                         resultados_finales.append(f"⏭️ Omitido (Ya existe en destino): {doc['nombre']}")
