@@ -63,7 +63,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y EXCEL (LÓGICA AISLADA DE INYECCIÓN DE DATOS)
+# 2. CONEXIONES API Y EXCEL
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -82,7 +82,6 @@ def mostrar_visor_archivo(file_id, nombre_archivo):
     st.markdown(f'<iframe class="pdf-frame" src="{url}" width="100%" height="800"></iframe>', unsafe_allow_html=True)
 
 def actualizar_fecha_inventario_excel(file_id):
-    # Intentamos la descarga normal o el formato de exportación para Google Sheets
     urls_descarga = [
         f"https://drive.google.com/uc?export=download&id={file_id}",
         f"https://docs.google.com/spreadsheets/d/{file_id}/export?format=xlsx"
@@ -90,19 +89,21 @@ def actualizar_fecha_inventario_excel(file_id):
     
     for url in urls_descarga:
         try:
-            r = requests.get(url)
-            if r.status_code == 200:
+            # Cabecera simulando un navegador para evitar bloqueos de Google Drive
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+            r = requests.get(url, headers=headers, timeout=15)
+            
+            if r.status_code == 200 and len(r.content) > 2000:
                 wb = openpyxl.load_workbook(io.BytesIO(r.content))
-                ws = wb.worksheets[0]
+                ws = wb.active
                 
-                # 1. Encontrar la última fila con datos leyendo de abajo hacia arriba
+                # 1. Encontrar la última fila real con datos
                 ultima_fila = 7
-                for r_idx in range(ws.max_row, 7, -1):
-                    if ws.cell(row=r_idx, column=2).value:
-                        ultima_fila = r_idx
-                        break
+                for row_idx in range(8, ws.max_row + 10):
+                    if ws.cell(row=row_idx, column=2).value or ws.cell(row=row_idx, column=3).value:
+                        ultima_fila = row_idx
                 
-                # 2. Obtener el último consecutivo
+                # 2. Obtener el consecutivo real
                 try:
                     ultimo_consecutivo = int(ws.cell(row=ultima_fila, column=1).value)
                 except:
@@ -111,7 +112,6 @@ def actualizar_fecha_inventario_excel(file_id):
                 fila_actual = ultima_fila + 1
                 consecutivo = ultimo_consecutivo + 1
                 
-                # Listas de hardware realistas
                 sistemas_operativos = ["W10 Pro 64", "W11 Enterprise", "W11 Pro", "Ubuntu 22.04 LTS"]
                 tipos = ["Torre / Board Asus", "Todo en Uno / HP", "Portatil / Lenovo", "Torre / Dell Optiplex", "Portatil / Asus Vivo"]
                 procesadores = ["Intel Core i5-12400 2.5GHz", "Intel Core i7-11700 2.5GHz", "AMD Ryzen 5 5600G 3.9GHz", "Intel Core i5 10400 2.9GHz", "Intel Core i3-10100 3.6GHz"]
@@ -150,8 +150,8 @@ def actualizar_fecha_inventario_excel(file_id):
                 output = io.BytesIO()
                 wb.save(output)
                 return output.getvalue()
-        except:
-            continue # Si hay un error (ej. URL incorrecta), prueba la siguiente
+        except Exception as e:
+            continue
     return None
 
 # -----------------------------------------------------------------------------
@@ -294,7 +294,7 @@ def obtener_datos_qms(requisito):
             "codigo": f"SG-07-0{cod_aleatorio}",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos técnicos, políticas restrictivas y controles aplicables a: {requisito.title()}, en estricto cumplimiento del marco normativo de la ISO/IEC 27001:2022.",
+                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos técnicos, políticas restrictivas y controles aplicables a: {requisito.title()}, en estricto cumplimiento del marco normativo de la ISO/IEC 27001.",
                 "2. ALCANCE": "Aplica para todos los procesos operativos, directivos, colaboradores directos y proveedores de servicios de SERGEM Mensajería S.A.S. a nivel nacional.",
                 "3. DIRECTRICES Y CONTROLES APLICABLES": "• Todo el personal involucrado debe cumplir de manera estricta y obligatoria con los controles de seguridad de la información definidos para este proceso.\n• El área de TI realizará auditorías preventivas periódicas para verificar su grado de eficacia y cumplimiento.\n• Todo desvío o falta de adherencia a este formato generará las respectivas medidas correctivas ante RRHH.",
                 "4. COMPROMISOS Y RESPONSABILIDADES": "Garantizar la mejora continua del SGSI, asegurando en todo momento la confidencialidad, integridad y disponibilidad frente a posibles amenazas internas o externas."
@@ -608,10 +608,14 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
                 
-                if "INVENTARIO" in req.upper() and "TI" in req.upper() and candidato['nombre'].endswith(('.xls', '.xlsx')): 
+                # AISLAMIENTO ESTRICTO PARA EL EXCEL: 
+                # Si el archivo es un excel y contiene "Inventario", lo sacamos por completo de la lista de copias genéricas.
+                es_excel_inventario = "INVENTARIO" in candidato['nombre'].upper() and candidato['nombre'].endswith(('.xls', '.xlsx'))
+                
+                if es_excel_inventario: 
                     estado = "⚙️ Encontrado (Editable)"
                     inventario_id = candidato['id']
-                    # EL SECRETO: ¡NO lo agregamos a archivos_validos para evitar el duplicado conflictivo!
+                    # NO se agrega a archivos_validos
                 else:
                     estado = "✅ Encontrado"
                     if candidato['id'] not in ids_procesados:
@@ -718,13 +722,13 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                         try:
                             res_excel = requests.post(URL_API_DRIVE, json=payload_excel)
                             if res_excel.status_code == 200:
-                                resultados_finales.append("✅ Inventario de computadores - Actualizado 2026.xlsx (Generado y subido al Drive)")
+                                resultados_finales.append("✅ Inventario de computadores - Actualizado 2026.xlsx (Generado y subido al Drive con registros nuevos)")
                             else:
                                 resultados_finales.append("⚠️ Excel generado localmente, pero falló la subida al Drive.")
                         except Exception as e:
                             resultados_finales.append(f"⚠️ Error de conexión al subir el Excel: {e}")
                     else:
-                        resultados_finales.append("❌ Falló la generación del Excel actualizado. Verifique permisos.")
+                        resultados_finales.append("❌ Falló la modificación del Excel base. Verifique permisos o el formato del archivo original.")
                         
                     paso_actual += 1
                     barra_progreso.progress(paso_actual / total_pasos)
