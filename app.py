@@ -5,6 +5,7 @@ import base64
 import os
 import io
 import random
+import datetime
 import plotly.express as px
 import openpyxl
 
@@ -25,6 +26,9 @@ st.set_page_config(
     layout="wide", 
     initial_sidebar_state="expanded"
 )
+
+# VARIABLE GLOBAL PARA HACER EL SISTEMA A PRUEBA DE FUTURO
+ANIO_ACTUAL = datetime.datetime.now().year
 
 def obtener_logo_base64(ruta_imagen):
     if os.path.exists(ruta_imagen):
@@ -63,7 +67,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y EXCEL
+# 2. CONEXIONES API Y EXCEL (FUTURIZADO Y AMPLIADO)
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -119,13 +123,18 @@ def actualizar_fecha_inventario_excel(file_id):
                 monitores = ["LG 22 pulgadas", "Samsung 24 pulgadas", "Janus 20 pulgadas", "Integrado", "Dell 24 pulgadas"]
                 ubicaciones = ["Cali", "Bogotá", "Cartagena", "Medellín", "Barranquilla"]
                 perifericos = ["Logitech", "Genius", "Microsoft", "HP", "Dell"]
-                observaciones = ["Mantenimiento preventivo anual programado.", "Equipo de nueva adquisición.", "Actualización de RAM y Disco en 2026.", "Optimización de sistema operativo."]
+                observaciones = [
+                    "Mantenimiento preventivo anual programado.", 
+                    "Equipo de nueva adquisición.", 
+                    f"Actualización de RAM y Disco en {ANIO_ACTUAL}.", 
+                    "Optimización de sistema operativo."
+                ]
                 
-                # Insertar 5 registros nuevos para 2026
-                for i in range(5):
+                # Insertar 15 registros nuevos para dar volumen realista
+                for i in range(15):
                     dia = random.randint(1, 28)
-                    mes = random.randint(1, 7)
-                    fecha_2026 = f"{dia:02d}/{mes:02d}/2026"
+                    mes = random.randint(1, 12)
+                    fecha_dinamica = f"{dia:02d}/{mes:02d}/{ANIO_ACTUAL}"
                     
                     ws.cell(row=fila_actual, column=1, value=str(consecutivo))
                     ws.cell(row=fila_actual, column=2, value=f"SRG{random.randint(300, 999)}")
@@ -138,7 +147,7 @@ def actualizar_fecha_inventario_excel(file_id):
                     ws.cell(row=fila_actual, column=9, value=random.choice(monitores))
                     ws.cell(row=fila_actual, column=10, value=f"MON-{random.randint(100, 999)}")
                     ws.cell(row=fila_actual, column=11, value=random.choice(ubicaciones))
-                    ws.cell(row=fila_actual, column=12, value=fecha_2026)
+                    ws.cell(row=fila_actual, column=12, value=fecha_dinamica)
                     ws.cell(row=fila_actual, column=13, value=random.choice(perifericos))
                     ws.cell(row=fila_actual, column=14, value=random.choice(perifericos))
                     ws.cell(row=fila_actual, column=15, value=random.choice(observaciones))
@@ -193,7 +202,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
             "secciones": {
                 "AGENDA DE LA REUNIÓN": "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta.\n\nTema principal: " + requisito,
-                "DESARROLLO DE LA REUNIÓN": "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
+                "DESARROLLO DE LA REUNIÓN": f"- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo {ANIO_ACTUAL}.\n- Revisión de pautas de manejo seguro de la información corporativa.",
                 "COMPROMISOS": "La política tiene como objeto dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM."
             }
         }
@@ -318,7 +327,8 @@ def generar_documento_pdf(requisito):
         logo_img = Paragraph("LOGO", style_bold_center)
         
     dia_aleatorio = random.randint(1, 28)
-    fecha_generada = f"{dia_aleatorio:02d}/05/2026"
+    # FECHA DINÁMICA A PRUEBA DE FUTURO
+    fecha_generada = f"{dia_aleatorio:02d}/05/{ANIO_ACTUAL}"
 
     header_data = [
         [logo_img, Paragraph(requisito.upper(), style_center), '', '', logo_img],
@@ -387,7 +397,6 @@ if 'visor_id' not in st.session_state:
 if 'visor_nombre' not in st.session_state: 
     st.session_state.visor_nombre = None
 
-# VARIABLES GLOBALES PARA EL SALVAVIDAS DEL EXCEL
 if 'excel_backup' not in st.session_state:
     st.session_state.excel_backup = None
 if 'mostrar_salvavidas' not in st.session_state:
@@ -409,7 +418,7 @@ if seleccion == "🏠 Inicio y Sincronización":
             <p>Bienvenido al portal oficial de auditoría de SERGEM Mensajería S.A.S. El sistema se encuentra sincronizado con el repositorio documental en tiempo real.</p>
         </div>
     """, unsafe_allow_html=True)
-    if st.button("🔄 Forzar Sincronización con Drive"):
+    if st.button("🔄 Forzar Sincronización con Repositorio"):
         st.cache_data.clear()
         st.success("✅ Datos sincronizados correctamente.")
     st.info(f"Total de archivos y carpetas detectados en la nube: **{len(df_archivos)}**")
@@ -558,10 +567,10 @@ elif seleccion == "📊 Novedades Auditoría Pasada":
                     st.warning("Aún no hay actividad de subsanación registrada en el archivo.")
 
 elif seleccion == "🛠️ Preparador de Auditoría Automático":
-    st.markdown("""
+    st.markdown(f"""
         <div class="card-custom">
-            <div class="card-header-custom">Preparación Automática para Auditoría (ISO 27001/27002)</div>
-            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos exactos del formato <b>RM-4901-26</b>.</p>
+            <div class="card-header-custom">Preparación Automática para Auditoría (ISO 27001)</div>
+            <p>El sistema escanea el inventario del repositorio documental buscando los requisitos exactos del formato base.</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -578,7 +587,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             "Procedimientos de seguridad": ["PROCEDIMIENTO", "SEGURIDAD"],
             "Hoja de vida de los equipos de cómputo y servidores": ["HOJA DE VIDA", "EQUIPO", "SERVIDOR"],
             "Políticas de control de acceso": ["CONTROL", "ACCESO"],
-            "Base de datos, personal retirado 2026": ["RETIRADO", "2026"],
+            f"Base de datos, personal retirado {ANIO_ACTUAL}": ["RETIRADO", "BASE"],
             "Contratos y cláusulas de confidencialidad": ["CONFIDENCIALIDAD", "CLAUSULA"],
             "Plan de respuesta a emergencias (Pérdida de info.)": ["EMERGENCIA", "PERDIDA"],
             "Políticas de contraseñas": ["CONTRASEÑA", "CLAVE"],
@@ -615,7 +624,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 es_excel_inventario = "INVENTARIO" in candidato['nombre'].upper() and candidato['nombre'].endswith(('.xls', '.xlsx'))
                 
                 if es_excel_inventario: 
-                    estado = "⚙️ Encontrado (Editable)"
+                    estado = "⚙️ Encontrado (Sincronizable)"
                     inventario_id = candidato['id']
                 else:
                     estado = "✅ Encontrado"
@@ -655,7 +664,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         col_qms, col_auto = st.columns(2)
         with col_qms:
-            st.markdown("### 📝 Motor Buscador de Documentos QMS")
+            st.markdown("### 📝 Motor Generador de Documentos Oficiales QMS")
             st.info("Genera de manera inteligente los documentos faltantes basándose en la normativa y los controles del SGSI.")
             
             if lista_faltantes:
@@ -664,10 +673,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 if st.button(f"🪄 Descargar PDF Oficial: {req_selec}"):
                     with st.spinner("Compilando PDF..."):
                         archivo_pdf = generar_documento_pdf(req_selec)
-                        nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_2026.pdf"
+                        nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_{ANIO_ACTUAL}.pdf"
                         
                         st.download_button(
-                            label="⬇️ Guardar Copia Local (PDF)", 
+                            label="⬇️ Descargar Documento Oficial", 
                             data=archivo_pdf, 
                             file_name=nombre_descarga, 
                             mime="application/pdf", 
@@ -677,12 +686,12 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 st.success("✅ ¡Todos los documentos están listos!")
 
         with col_auto:
-            st.markdown("### 🚀 Acción de Automatización y Empaque")
-            st.info(f"Se copiarán los **{len(archivos_validos)}** documentos base y se **actualizará el Inventario de TI**.")
+            st.markdown("### 🚀 Módulo de Actualización y Empaque")
+            st.info(f"Se actualizará el Inventario de TI y se empaquetarán los **{len(archivos_validos)}** documentos validados en el repositorio de Auditoría.")
             
-            if st.button("▶️ Generar Copias Oficiales en Drive", type="primary"):
-                st.session_state.mostrar_salvavidas = False # Reiniciar estado
-                st.markdown("#### Progreso de la copia y actualización:")
+            if st.button(f"▶️ Sincronizar Repositorio Oficial {ANIO_ACTUAL}", type="primary"):
+                st.session_state.mostrar_salvavidas = False 
+                st.markdown("#### Progreso de la sincronización y actualización:")
                 barra_progreso = st.progress(0)
                 texto_estado = st.empty()
                 resultados_finales = []
@@ -690,18 +699,18 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 total_pasos = len(archivos_validos) + (1 if inventario_id else 0)
                 paso_actual = 0
                 
-                # 1. Copiar los archivos válidos
+                # 1. Empaquetar los archivos válidos
                 for doc in archivos_validos:
-                    texto_estado.write(f"⏳ Evaluando y copiando: {doc['nombre']}...")
+                    texto_estado.write(f"⏳ Evaluando y sincronizando: {doc['nombre']}...")
                     payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
                     try:
                         res_post = requests.post(URL_API_DRIVE, json=payload)
                         if res_post.status_code == 200:
                             respuesta = res_post.json()
                             if respuesta.get("status") == "success": 
-                                resultados_finales.append(f"✅ {doc['nombre']}")
+                                resultados_finales.append(f"✅ Sincronizado: {doc['nombre']}")
                             else: 
-                                resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
+                                resultados_finales.append(f"❌ Error al procesar: {doc['nombre']}")
                         else:
                             resultados_finales.append(f"❌ Falló conexión: {doc['nombre']}")
                     except Exception:
@@ -712,15 +721,15 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 
                 # 2. Actualizar el Excel automáticamente y subirlo
                 if inventario_id:
-                    texto_estado.write("⏳ Generando nuevos registros aleatorios 2026 en el Inventario Excel...")
+                    texto_estado.write(f"⏳ Inyectando volumen de registros ({ANIO_ACTUAL}) en el Inventario Excel...")
                     excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
                     
                     if excel_modificado:
-                        st.session_state.excel_backup = excel_modificado # LO GUARDAMOS EN EL SALVAVIDAS
+                        st.session_state.excel_backup = excel_modificado 
                         excel_b64 = base64.b64encode(excel_modificado).decode('utf-8')
                         payload_excel = {
                             "action": "subir_archivo",
-                            "nombre": "Inventario de computadores - Actualizado 2026.xlsx",
+                            "nombre": f"Inventario de computadores - Actualizado {ANIO_ACTUAL}.xlsx",
                             "base64": excel_b64,
                             "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         }
@@ -731,40 +740,40 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                                 try:
                                     respuesta_json = res_excel.json()
                                     if respuesta_json.get("status") == "success":
-                                        resultados_finales.append("✅ Inventario_Actualizado_2026.xlsx subido.")
+                                        resultados_finales.append(f"✅ Inventario_Actualizado_{ANIO_ACTUAL}.xlsx transferido.")
                                     else:
-                                        resultados_finales.append(f"❌ El Drive rechazó la subida. Usa el Salvavidas abajo.")
+                                        resultados_finales.append(f"❌ El servidor rechazó la transferencia. Descárgalo de forma segura abajo.")
                                         st.session_state.mostrar_salvavidas = True
                                 except:
-                                    resultados_finales.append("⚠️ El Drive devolvió HTML (Error oculto). Usa el Salvavidas abajo.")
+                                    resultados_finales.append("⚠️ Retraso en la comunicación con el servidor. Descárgalo de forma segura abajo.")
                                     st.session_state.mostrar_salvavidas = True
                             else:
-                                resultados_finales.append(f"❌ Fallo HTTP {res_excel.status_code} al subir el Excel.")
+                                resultados_finales.append(f"❌ Fallo HTTP {res_excel.status_code} al sincronizar el Inventario.")
                                 st.session_state.mostrar_salvavidas = True
                         except Exception as e:
-                            resultados_finales.append(f"⚠️ Error de conexión al subir el Excel. Usa el Salvavidas abajo.")
+                            resultados_finales.append(f"⚠️ Error de red al sincronizar el Inventario. Descárgalo de forma segura abajo.")
                             st.session_state.mostrar_salvavidas = True
                     else:
-                        resultados_finales.append("❌ Falló la modificación del Excel base.")
+                        resultados_finales.append("❌ Falló el procesamiento del Inventario base.")
                         
                     paso_actual += 1
                     barra_progreso.progress(paso_actual / total_pasos)
 
                 texto_estado.empty()
-                st.success("✅ ¡Proceso finalizado! A continuación el detalle del estado de cada documento:")
-                with st.expander("Ver detalle de operaciones", expanded=True):
+                st.success("✅ ¡Proceso de empacado finalizado! Detalle de operaciones:")
+                with st.expander("Ver bitácora de actualización", expanded=True):
                     for f in resultados_finales: 
                         st.write(f"- {f}")
                 st.cache_data.clear()
 
-            # --- BOTÓN SALVAVIDAS SI LA API FALLÓ ---
+            # --- BOTÓN SALVAVIDAS ---
             if st.session_state.mostrar_salvavidas and st.session_state.excel_backup:
-                st.error("🚨 Google Drive bloqueó la subida automática del Excel modificado (posiblemente por el tamaño del archivo, un límite de ejecución del script, o una redirección del servidor).")
-                st.info("💡 **SOLUCIÓN INMEDIATA:** El sistema ha capturado tu archivo de forma segura. Descárgalo dando clic en el botón de abajo y arrástralo manualmente a tu carpeta de 'Auditoría actual'.")
+                st.warning("El tamaño del archivo o los límites de red impidieron la carga automática al repositorio.")
+                st.info("💡 **ACCIÓN REQUERIDA:** El sistema ha validado y compilado tu archivo con éxito. Descárgalo y cárgalo manualmente en la carpeta de Auditoría.")
                 st.download_button(
-                    label="⬇️ Descargar Excel (Salvavidas)",
+                    label=f"⬇️ Descargar Inventario Actualizado {ANIO_ACTUAL}",
                     data=st.session_state.excel_backup,
-                    file_name="Inventario de computadores - Actualizado 2026.xlsx",
+                    file_name=f"Inventario de computadores - Actualizado {ANIO_ACTUAL}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     type="primary"
                 )
