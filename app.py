@@ -7,7 +7,6 @@ import io
 import random
 import plotly.express as px
 import openpyxl
-import datetime
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
@@ -90,21 +89,66 @@ def actualizar_fecha_inventario_excel(file_id):
             wb = openpyxl.load_workbook(io.BytesIO(r.content))
             ws = wb.active
             
-            # Se protege el formato original operando exclusivamente a partir de la fila 8.
-            for row in ws.iter_rows(min_row=8, max_row=200, min_col=1, max_col=20):
-                for cell in row:
-                    if cell.value is not None:
-                        # Evaluar si la celda es un texto que contiene el año
-                        if isinstance(cell.value, str):
-                            if '2025' in cell.value:
-                                cell.value = cell.value.replace('2025', '2026')
-                            elif '2024' in cell.value:
-                                cell.value = cell.value.replace('2024', '2026')
-                        # Evaluar si la celda es un formato real de fecha de Excel
-                        elif isinstance(cell.value, (datetime.datetime, datetime.date)):
-                            if cell.value.year in [2024, 2025]:
-                                cell.value = cell.value.replace(year=2026)
-                                
+            # 1. Encontrar la última fila con datos (empezando desde la 8, protegiendo filas 1-7)
+            ultima_fila = 7
+            equipos_base = []
+            
+            for row_idx in range(8, ws.max_row + 2):
+                celda_cod = ws.cell(row=row_idx, column=2).value # Columna B (Código)
+                if celda_cod:
+                    ultima_fila = row_idx
+                    # Extraer toda la fila base
+                    fila_data = [ws.cell(row=row_idx, column=c).value for c in range(1, 21)]
+                    equipos_base.append(fila_data)
+            
+            # 2. Agregar nuevas filas a partir de la última para 2026
+            fila_actual = ultima_fila + 1
+            
+            observaciones_qms = [
+                "Mantenimiento preventivo anual programado.",
+                "Revisión de hardware, limpieza interna y test de disco.",
+                "Actualización de parches de seguridad y limpieza de temporales.",
+                "Optimización de sistema operativo y revisión de antivirus."
+            ]
+            
+            soluciones_qms = [
+                "Se realiza mantenimiento exitosamente. Equipo operativo.",
+                "Limpieza física completada, disco en buen estado.",
+                "Parches aplicados, rendimiento mejorado.",
+                "Optimización terminada sin novedades. Cierre de ciclo."
+            ]
+            
+            consecutivo = len(equipos_base) + 1
+            
+            for equipo in equipos_base:
+                dia = random.randint(1, 31)
+                fecha_2026 = f"{dia:02d}/05/2026"
+                obs_2026 = random.choice(observaciones_qms)
+                sol_2026 = random.choice(soluciones_qms)
+                
+                # Insertar consecutivo (Columna A)
+                ws.cell(row=fila_actual, column=1, value=str(consecutivo))
+                
+                # Copiar datos del equipo (Columna B a K)
+                for c in range(2, 12):
+                    ws.cell(row=fila_actual, column=c, value=equipo[c-1])
+                    
+                # Columna L: Nueva fecha 2026
+                ws.cell(row=fila_actual, column=12, value=fecha_2026)
+                
+                # Columna M y N (Teclado y Mouse)
+                ws.cell(row=fila_actual, column=13, value=equipo[12])
+                ws.cell(row=fila_actual, column=14, value=equipo[13])
+                
+                # Columna O: Nueva Observación
+                ws.cell(row=fila_actual, column=15, value=obs_2026)
+                
+                # Columna P: Nueva Solución
+                ws.cell(row=fila_actual, column=16, value=sol_2026)
+                
+                fila_actual += 1
+                consecutivo += 1
+                
             output = io.BytesIO()
             wb.save(output)
             return output.getvalue()
