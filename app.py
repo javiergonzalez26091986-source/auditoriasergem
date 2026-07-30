@@ -180,7 +180,7 @@ class BottomPusher(Flowable):
         pass
 
 # -----------------------------------------------------------------------------
-# 4. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN AMPLIADA Y PROFESIONAL ISO 27001)
+# 4. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN 100% EXHAUSTIVA Y PROFESIONAL ISO 27001)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -190,11 +190,11 @@ def obtener_datos_qms(requisito):
             "codigo": "PO-01-001",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer la declaración formal de la Dirección General de SERGEM Mensajería S.A.S. respecto al compromiso inquebrantable con la Seguridad de la Información. Este marco da cumplimiento estricto a las directrices del control A.5.1 de la norma internacional ISO/IEC 27001:2022, asegurando la protección integral de los activos tecnológicos, bases de datos logísticas y canales de comunicación frente a amenazas internas y externas, alineándose con la legislación colombiana vigente (Ley 1581 de 2012 y Ley 1273 de 2009).",
-                "2. ALCANCE ORGANIZACIONAL": "La presente política es de mandatorio cumplimiento para todos los colaboradores directos, personal temporal, contratistas, prestadores de servicios y terceros que operen o tengan acceso a la infraestructura tecnológica, sistemas core (Freeway), redes de datos y activos físicos de SERGEM a nivel nacional en las sedes de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
+                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer la declaración formal de la Dirección General de SERGEM Mensajería S.A.S. respecto al compromiso inquebrantable con la Seguridad de la Información. Este marco da cumplimiento estricto a las directrices del control A.5.1 de la norma internacional ISO/IEC 27001:2022, asegurando la protección integral de los activos tecnológicos, bases de datos logísticas y canales de comunicación frente a amenazas internas y externas, alineándose con la legislación colombiana vigente (Ley 1581 de 2012 de Protección de Datos Personales y Ley 1273 de 2009 de Delitos Informáticos).",
+                "2. ALCANCE ORGANIZACIONAL": "La presente política es de mandatorio cumplimiento para todos los colaboradores directos, personal temporal, contratistas, prestadores de servicios y terceros que operen o tengan acceso a la infraestructura tecnológica, sistemas core (Freeway), redes de datos y activos físicos de SERGEM a nivel nacional en las sucursales de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
                 "3. PRINCIPIOS RECTORES DEL SGSI": "• Confidencialidad: Garantizar que la información corporativa, financiera y de clientes solo sea accesible por personal debidamente autorizado bajo el principio de privilegio mínimo.\n• Integridad: Proteger la exactitud, completitud y validez de los datos logísticos y de mensajería frente a alteraciones, suplantaciones o modificaciones no autorizadas.\n• Disponibilidad: Asegurar que los sistemas de información, bases de datos y plataformas operativas permanezcan accesibles ininterrumpidamente para los usuarios y canales de atención autorizados.",
                 "4. GOBIERNO Y ROLES DE SEGURIDAD": "La Alta Gerencia y el Comité de Seguridad de la Información son responsables de revisar anual o extraordinariamente la vigencia de este documento. El Departamento de Tecnología e Infraestructura supervisará la implementación técnica de los controles operativos, mientras que cada jefatura de área garantizará la difusión y acatamiento por parte de sus equipos de trabajo.",
-                "5. GESTIÓN DE EXCEPCIONES Y RÉGIMEN SANCIONATORIO": "Cualquier intento de vulneración, desviación o incumplimiento de los lineamientos descritos en esta política será calificado como falta grave y sometido de manera inmediata al Procedimiento Disciplinario interno (PR-03-002), sin perjuicio de las acciones legales penales o civiles a que haya lugar ante los juzgados de la República de Colombia."
+                "5. GESTIÓN DE EXCEPCIONES Y RÉGIMEN SANCIONATORIO": "Cualquier intento de vulneración, desviación o incumplimiento de los descritos en esta política será calificado como falta grave y sometido de manera inmediata al Procedimiento Disciplinario interno (PR-03-002), sin perjuicio de las acciones legales penales o civiles a que haya lugar ante los juzgados de la República de Colombia."
             }
         }
         
@@ -672,7 +672,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Escaneo general en la carpeta "Auditoría" y todas sus subcarpetas
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
             (df_archivos['ruta'].str.contains('Auditoría', case=False, na=False))
