@@ -7,6 +7,7 @@ import io
 import random
 import plotly.express as px
 import openpyxl
+import datetime
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
@@ -88,14 +89,22 @@ def actualizar_fecha_inventario_excel(file_id):
         if r.status_code == 200:
             wb = openpyxl.load_workbook(io.BytesIO(r.content))
             ws = wb.active
-            # Se protege desde la fila 1 hasta la 7. Procesa exclusivamente a partir de la fila 8.
+            
+            # Se protege el formato original operando exclusivamente a partir de la fila 8.
             for row in ws.iter_rows(min_row=8, max_row=200, min_col=1, max_col=20):
                 for cell in row:
-                    if cell.value and isinstance(cell.value, str):
-                        if '2025' in cell.value:
-                            cell.value = cell.value.replace('2025', '2026')
-                        elif '2024' in cell.value:
-                            cell.value = cell.value.replace('2024', '2026')
+                    if cell.value is not None:
+                        # Evaluar si la celda es un texto que contiene el año
+                        if isinstance(cell.value, str):
+                            if '2025' in cell.value:
+                                cell.value = cell.value.replace('2025', '2026')
+                            elif '2024' in cell.value:
+                                cell.value = cell.value.replace('2024', '2026')
+                        # Evaluar si la celda es un formato real de fecha de Excel
+                        elif isinstance(cell.value, (datetime.datetime, datetime.date)):
+                            if cell.value.year in [2024, 2025]:
+                                cell.value = cell.value.replace(year=2026)
+                                
             output = io.BytesIO()
             wb.save(output)
             return output.getvalue()
@@ -115,7 +124,7 @@ def obtener_datos_qms(requisito):
             "codigo": "PR-03-002",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. MARCO NORMATIVO Y OBJETIVO": "Conforme al Anexo A.5.4 de la norma ISO/IEC 27001:2022, el objetivo es establecer un proceso disciplinario formal y comunicado para actuar ante empleados y terceros que cometan violaciones a la seguridad de la información.",
+                "1. OBJETIVO": "Establecer los lineamientos y sanciones aplicables ante el incumplimiento de las políticas del Sistema de Gestión de Seguridad de la Información (SGSI).",
                 "2. ALCANCE": "Aplica para todos los empleados, contratistas y terceros que tengan acceso a los sistemas de SERGEM Mensajería S.A.S.",
                 "3. DEFINICIONES": "• Falta Leve: Incumplimiento que no genera impacto crítico.\n• Falta Grave: Violación que expone datos sensibles o compromete la operatividad.",
                 "4. REGLAS GENERALES / POLÍTICAS": "• El uso indebido de los activos de TI es una falta grave.\n• Toda sanción debe respetar el debido proceso y el Reglamento Interno de Trabajo.",
@@ -125,17 +134,17 @@ def obtener_datos_qms(requisito):
         }
     
     # 2. PLAN DE ACTUALIZACIÓN DE RECURSOS TECNOLÓGICOS
-    elif "actualización" in req or "recursos" in req or "hoja de vida" in req:
+    elif "actualización" in req or "recursos" in req:
         return {
             "codigo": "PL-07-005",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. MARCO NORMATIVO Y OBJETIVO": "Dando cumplimiento al Anexo A.8.1 y A.8.8 de ISO/IEC 27001:2022, este plan rige la renovación, mantenimiento y actualización del hardware y software de la compañía para mitigar riesgos por obsolescencia tecnológica.",
+                "1. OBJETIVO": "Planificar la renovación, mantenimiento y actualización del hardware y software de la compañía para mitigar riesgos por obsolescencia tecnológica.",
                 "2. ALCANCE": "Aplica para toda la infraestructura tecnológica (servidores, redes, computadores, licencias) de SERGEM a nivel nacional.",
                 "3. DEFINICIONES": "• Obsolescencia: Caída en desuso de equipos por falta de rendimiento o soporte.\n• Vida útil: Tiempo estimado de funcionamiento óptimo de un activo TI.",
                 "4. REGLAS GENERALES / POLÍTICAS": "• Los sistemas operativos y antivirus deben mantenerse en su última versión estable.\n• Los equipos de cómputo tienen un ciclo de renovación proyectado de 4 a 5 años.",
-                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. El área de TI realiza un análisis semestral del Inventario de TI.\n2. Ejecución del cronograma de mantenimiento físico y lógico registrando la novedad en las Hojas de Vida.\n3. Elaboración de presupuesto y solicitud de aprobación a Gerencia para equipos obsoletos.\n4. Adquisición, configuración y entrega del recurso tecnológico actualizado.",
-                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Inventario de Computadores (Excel con Hojas de Vida).\n• Política de Adquisición de Tecnología."
+                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. El área de TI realiza un análisis anual del Inventario de TI.\n2. Identificación de equipos obsoletos o licencias por vencer.\n3. Elaboración de presupuesto y solicitud de aprobación a Gerencia.\n4. Adquisición, configuración y entrega del recurso tecnológico actualizado.",
+                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Inventario de TI (Formato Excel).\n• Política de Adquisición de Tecnología."
             }
         }
         
@@ -146,7 +155,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
             "secciones": {
                 "AGENDA DE LA REUNIÓN": "Se programa personal administrativo a nivel nacional: Cali, Barranquilla, Bogotá, Cartagena, Ibagué, Santa Marta.\n\nTema principal: " + requisito,
-                "DESARROLLO DE LA REUNIÓN": "En alineación con el control A.5.2 de la norma ISO/IEC 27001:2022:\n- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
+                "DESARROLLO DE LA REUNIÓN": "- Socialización de políticas y controles de Seguridad de la Información correspondientes al periodo 2026.\n- Revisión de pautas de manejo seguro de la información corporativa.",
                 "COMPROMISOS": "La política tiene como objeto dar la información necesaria a los diferentes grupos de interés, así como establecer los lineamientos que garanticen la protección de los datos a través de los procedimientos de SERGEM."
             }
         }
@@ -157,7 +166,7 @@ def obtener_datos_qms(requisito):
             "codigo": "PR-07-015",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. MARCO NORMATIVO Y OBJETIVO": "Cumpliendo con los controles A.5.29 y A.5.30 de ISO/IEC 27001:2022, el objetivo es establecer un plan de acción inmediato para mitigar, responder y recuperar la información ante incidentes críticos, ciberataques o desastres físicos.",
+                "1. OBJETIVO": "Establecer un plan de acción inmediato para mitigar, responder y recuperar la información ante incidentes críticos, ciberataques o desastres físicos.",
                 "2. ALCANCE": "Aplica para todos los sistemas críticos de SERGEM Mensajería S.A.S.",
                 "3. DEFINICIONES": "• RTO (Recovery Time Objective): Tiempo objetivo de recuperación.\n• RPO (Recovery Point Objective): Punto objetivo de recuperación (pérdida de datos máxima tolerable).",
                 "4. REGLAS GENERALES / POLÍTICAS": "• Todo evento que comprometa la disponibilidad de la información debe ser escalado a Gerencia en menos de 1 hora.",
@@ -207,14 +216,14 @@ def obtener_datos_qms(requisito):
             }
         }
         
-    # 8. ACUERDOS DE SERVICIO Y CONFIDENCIALIDAD (FORMATO ACTA) Y HABEAS DATA
-    elif "acuerdo" in req or "servicio" in req or "confidencialidad" in req or "habeas" in req or "datos" in req:
+    # 8. ACUERDOS DE SERVICIO Y CONFIDENCIALIDAD (FORMATO ACTA)
+    elif "acuerdo" in req or "servicio" in req or "confidencialidad" in req:
         return {
             "codigo": "PO-07-014",
             "tipo_firma": "CONTRATISTA / PROVEEDOR",
             "secciones": {
                 "IDENTIFICACIÓN DEL PROVEEDOR / TERCERO": "NOMBRE DE LA SOCIEDAD: [Ingresar Razón Social]\nNIT: [Ingresar NIT]\nREPRESENTANTE LEGAL: [Ingresar Nombre]",
-                "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a garantizar la disponibilidad de los servicios tecnológicos contratados según los Acuerdos de Nivel de Servicio (SLA) pactados.\n\nSEGUNDA. Confidencialidad: El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' de SERGEM SAS.\n\nTERCERA. Cumplimiento Legal (Habeas Data): El proveedor dará estricto cumplimiento a las disposiciones de la Ley 1581 de 2012 y el Decreto 1377 de 2013, garantizando que el tratamiento de datos personales cuente con la autorización del titular.\n\nCUARTA. Auditoría: SERGEM se reserva el derecho de auditar los controles de seguridad del proveedor conforme al Anexo A.5.15 de ISO 27001."
+                "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a garantizar la disponibilidad de los servicios tecnológicos contratados según los Acuerdos de Nivel de Servicio (SLA) pactados.\n\nSEGUNDA. Confidencialidad: El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' de SERGEM SAS.\n\nTERCERA. Cumplimiento Legal: El proveedor dará estricto cumplimiento a las disposiciones de la Ley 1581 de 2012 (Habeas Data).\n\nCUARTA. Auditoría: SERGEM se reserva el derecho de auditar los controles de seguridad del proveedor."
             }
         }
         
@@ -234,7 +243,7 @@ def obtener_datos_qms(requisito):
         }
 
     # 10. BASE DE DATOS PERSONAL RETIRADO
-    elif "retirado" in req:
+    elif "retirado" in req or "base de datos" in req:
         return {
             "codigo": "PO-07-025",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
@@ -252,9 +261,9 @@ def obtener_datos_qms(requisito):
             "codigo": "SG-07-099",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. MARCO NORMATIVO Y OBJETIVO": f"En estricta observancia de los lineamientos de la norma ISO/IEC 27001:2022, este documento define los controles aplicables a: {requisito.title()}.",
+                "1. OBJETIVO DEL DOCUMENTO": f"Establecer los lineamientos, políticas y controles aplicables a: {requisito.title()}.",
                 "2. ALCANCE": "Aplica para todos los procesos, colaboradores y proveedores de SERGEM Mensajería S.A.S.",
-                "3. DIRECTRICES DE SEGURIDAD": "• El personal debe cumplir estrictamente con los controles definidos por la norma.\n• El incumplimiento generará las respectivas medidas correctivas y disciplinarias.",
+                "3. DIRECTRICES DE SEGURIDAD": "• El personal debe cumplir estrictamente con los controles definidos por la norma ISO 27001.\n• El incumplimiento generará las respectivas medidas correctivas y disciplinarias.",
                 "4. COMPROMISOS": "Garantizar la mejora continua, la confidencialidad y el resguardo de la información de la compañía."
             }
         }
