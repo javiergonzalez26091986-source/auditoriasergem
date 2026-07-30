@@ -691,7 +691,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             "Plan de continuidad del negocio": ["CONTINUIDAD", "NEGOCIO"],
             "Matriz de riesgos de TI": ["MATRIZ", "RIESGO"],
             "Informe de pruebas de vulnerabilidad (Ethical Hacking)": ["VULNERABILIDAD", "HACKING"],
-            "Documentos de gestión de seguridad en contratos": ["CONTRATO", "PRESTADOR"],
+            "Documentos de gestión de seguridad en contratos": ["CONTRATO", "SEGURIDAD"], # <-- Corrección Aplicada aquí
             "SGSI (Sistema de gestión de seguridad)": ["SGSI"],
             "Plan de acción, preventivo y correctivo": ["PLAN", "ACCION", "PREVENTIVO"]
         }
@@ -753,6 +753,18 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
             df_mostrar = df_analisis
             
         st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+        
+        # --- NUEVO: VALIDADOR DE ARCHIVOS SOBRANTES ---
+        nombres_validos = [d['nombre'] for d in archivos_validos]
+        if inventario_id:
+            nombres_validos.append(df_archivos_base[df_archivos_base['id'] == inventario_id].iloc[0]['nombre'])
+            
+        df_sobrantes = df_archivos_base[~df_archivos_base['nombre'].isin(nombres_validos)][['nombre', 'ruta']]
+        if not df_sobrantes.empty:
+            with st.expander(f"⚠️ Atención: Se detectaron {len(df_sobrantes)} archivos sobrantes en el repositorio (No requeridos)"):
+                st.warning("Estos documentos no hacen parte de la lista oficial de la auditoría Kreston. Considera verificar y removerlos de la carpeta de Auditoría actual para evitar confusiones a la hora de presentar los soportes.")
+                st.dataframe(df_sobrantes, use_container_width=True, hide_index=True)
+                
         st.divider()
 
         col_qms, col_auto = st.columns(2)
@@ -795,6 +807,18 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 # 1. Empaquetar los archivos válidos
                 for doc in archivos_validos:
                     texto_estado.write(f"⏳ Evaluando y sincronizando: {doc['nombre']}...")
+                    
+                    # --- NUEVO: VALIDADOR DE EXISTENCIA ---
+                    archivos_mismo_nombre = df_archivos[df_archivos['nombre'] == doc['nombre']]
+                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría', case=False, na=False).any()
+                    
+                    # Si el archivo aparece más de una vez (ej. copia) o ya está en la ruta destino
+                    if len(archivos_mismo_nombre) > 1 or ya_existe_en_auditoria:
+                        resultados_finales.append(f"⏭️ Omitido (Ya existe en destino): {doc['nombre']}")
+                        paso_actual += 1
+                        barra_progreso.progress(paso_actual / total_pasos)
+                        continue
+
                     payload = {"action": "copiar_archivos", "fileIds": [doc['id']]}
                     try:
                         res_post = requests.post(URL_API_DRIVE, json=payload)
