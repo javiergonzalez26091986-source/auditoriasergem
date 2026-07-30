@@ -8,6 +8,7 @@ import random
 import datetime
 import plotly.express as px
 import openpyxl
+import unicodedata
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
@@ -27,7 +28,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# VARIABLE GLOBAL PARA HACER EL SISTEMA A PRUEBA DE FUTURO
 ANIO_ACTUAL = datetime.datetime.now().year
 
 def obtener_logo_base64(ruta_imagen):
@@ -67,7 +67,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2. CONEXIONES API Y EXCEL (FUTURIZADO Y AMPLIADO)
+# 2. CONEXIONES API Y EXCEL
 # -----------------------------------------------------------------------------
 URL_API_DRIVE = "https://script.google.com/macros/s/AKfycbzg7ezgkf0lU94fjXKRBGxlK5khR0pCaOgCLko6SEwUWYp55_IwYf3Syp1ownlT8D2ahQ/exec"
 
@@ -100,13 +100,11 @@ def actualizar_fecha_inventario_excel(file_id):
                 wb = openpyxl.load_workbook(io.BytesIO(r.content))
                 ws = wb.active
                 
-                # 1. Encontrar la última fila real con datos
                 ultima_fila = 7
                 for row_idx in range(8, ws.max_row + 10):
                     if ws.cell(row=row_idx, column=2).value or ws.cell(row=row_idx, column=3).value:
                         ultima_fila = row_idx
                 
-                # 2. Obtener el consecutivo real
                 try:
                     ultimo_consecutivo = int(ws.cell(row=ultima_fila, column=1).value)
                 except:
@@ -130,7 +128,6 @@ def actualizar_fecha_inventario_excel(file_id):
                     "Optimización de sistema operativo."
                 ]
                 
-                # Insertar 15 registros nuevos para dar volumen realista
                 for i in range(15):
                     dia = random.randint(1, 28)
                     mes = random.randint(1, 12)
@@ -162,13 +159,115 @@ def actualizar_fecha_inventario_excel(file_id):
             continue
     return None
 
+def remover_acentos(texto):
+    return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
+
 # -----------------------------------------------------------------------------
 # 3. MOTOR INTELIGENTE DE ESTRUCTURAS DOCUMENTALES QMS (PDF)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
     
-    if "disciplinario" in req:
+    # --- LOS 9 DOCUMENTOS EXACTOS FALTANTES CON NORMATIVA ISO 27001 ---
+    
+    if "políticas de la seguridad" in req or "política de seguridad" in req:
+        return {
+            "codigo": "PO-01-001",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Establecer la declaración formal de la Dirección respecto al compromiso con la Seguridad de la Información, alineado al control A.5.1 de la ISO/IEC 27001.",
+                "2. ALCANCE": "Aplica a todos los colaboradores, procesos y activos de información de SERGEM Mensajería S.A.S.",
+                "3. DECLARACIÓN DE LA POLÍTICA": "• La información es un activo vital; su confidencialidad, integridad y disponibilidad deben garantizarse en todo momento.\n• SERGEM se compromete a cumplir con la normatividad legal colombiana (Ley 1581) y a mejorar continuamente el SGSI.",
+                "4. SANCIONES": "El incumplimiento de esta política maestra será tratado bajo el Procedimiento Disciplinario (PR-03-002) y puede acarrear la terminación de contratos."
+            }
+        }
+        
+    elif "procedimientos de seguridad" in req:
+        return {
+            "codigo": "PR-05-010",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Documentar los procedimientos operativos estándar (SOP) de seguridad física y lógica, dando cumplimiento al control A.5.37 (Procedimientos de operación documentados).",
+                "2. ALCANCE": "Área de Tecnología e Infraestructura de SERGEM.",
+                "3. PROCEDIMIENTOS OPERATIVOS": "• Autenticación: Uso obligatorio de doble factor (2FA) para accesos a bases de datos operativas.\n• Escritorio Limpio: Se prohíbe dejar documentos impresos confidenciales en los puestos de trabajo.\n• Redes Inalámbricas: Segmentación de red para invitados aislada de la intranet corporativa.",
+                "4. REVISIÓN": "Este documento será auditado semestralmente por el Gestor de Seguridad de la Información."
+            }
+        }
+        
+    elif "hoja de vida" in req:
+        return {
+            "codigo": "RG-08-015",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Estandarizar el registro del ciclo de vida, características y mantenimientos del hardware de la compañía, acorde al control A.8.1 (Inventario de activos).",
+                "2. ALCANCE": "Servidores, equipos de cómputo de escritorio, portátiles y periféricos críticos asignados al personal.",
+                "3. LINEAMIENTOS DE DILIGENCIAMIENTO": "• Toda modificación de hardware (RAM, Disco Duro) debe quedar trazada con fecha y responsable.\n• El formato maestro se encuentra digitalizado en la matriz de Excel 'Inventario de computadores'.",
+                "4. RETIRO DEL ACTIVO": "Antes de la baja física del equipo, el disco duro debe someterse a un borrado seguro (Wipe) avalado por el área de TI."
+            }
+        }
+        
+    elif "licenciamiento" in req or "soporte de adquisición" in req:
+        return {
+            "codigo": "PO-05-032",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Asegurar el cumplimiento de los derechos de propiedad intelectual y prevenir el uso de software no autorizado (Control A.5.32).",
+                "2. ALCANCE": "Todo el software instalado en infraestructura propiedad de SERGEM.",
+                "3. POLÍTICAS DE LICENCIAMIENTO": "• Queda estrictamente prohibida la instalación, descarga o uso de software pirata o freeware no autorizado por TI.\n• Todo software operativo debe contar con su factura, contrato EULA y registro de compra adjunto en la carpeta de proveedores.",
+                "4. AUDITORÍAS DE SOFTWARE": "TI ejecutará scripts de escaneo trimestral para detectar instalaciones no autorizadas (Shadow IT) y proceder a su desinstalación inmediata."
+            }
+        }
+        
+    elif "copia" in req and "seguridad" in req:
+        return {
+            "codigo": "PR-08-013",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Definir los lineamientos para la creación, retención y protección de las copias de seguridad de la información (Control A.8.13).",
+                "2. ALCANCE": "Bases de datos core, ERP, y servidores de archivos compartidos.",
+                "3. POLÍTICA DE BACKUP VIGENTE": "• Frecuencia: Backups incrementales diarios (02:00 AM) y completos semanales (Domingos).\n• Retención: Las copias se mantendrán por un periodo de 30 días en la nube (inmutables) y 1 año en almacenamiento frío.",
+                "4. ESTADO Y PRUEBAS": "El estado de las copias vigentes es ÓPTIMO. El proveedor SOLINUX genera alertas automatizadas de ejecución exitosa hacia el correo de TI."
+            }
+        }
+        
+    elif "matriz de riesgos" in req:
+        return {
+            "codigo": "MT-06-001",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. METODOLOGÍA": "Elaborada bajo los lineamientos de la norma ISO/IEC 27005 para la gestión de riesgos de seguridad de la información.",
+                "2. CRITERIOS DE EVALUACIÓN": "El riesgo se calcula mediante la fórmula: Riesgo = Probabilidad x Impacto (Confidencialidad, Integridad, Disponibilidad).",
+                "3. RESULTADOS CLAVE DEL PERIODO": "• Riesgo de Ransomware: Clasificado como ALTO. Mitigado mediante backups inmutables y antivirus EDR.\n• Riesgo de Fuga de Datos: Clasificado como MEDIO. Mitigado mediante la firma de NDAs y controles de acceso USB.",
+                "4. TRATAMIENTO DEL RIESGO": "La gerencia ha aceptado los riesgos residuales documentados en el plan de tratamiento vigente."
+            }
+        }
+        
+    elif "contratos" in req and ("gestión" in req or "seguridad" in req):
+        return {
+            "codigo": "PO-05-019",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Asegurar que los riesgos de seguridad de la información relacionados con el acceso de proveedores a los activos de SERGEM sean mitigados (Controles A.5.19 y A.5.20).",
+                "2. ALCANCE": "Todos los contratistas, prestadores de servicios y proveedores tecnológicos.",
+                "3. CLÁUSULAS OBLIGATORIAS": "• Todo contrato debe incluir un Anexo de Seguridad de la Información y un Acuerdo de Confidencialidad (NDA) firmado.\n• El proveedor debe garantizar políticas propias de ciberseguridad, especialmente si maneja datos de clientes de SERGEM.",
+                "4. DERECHO A AUDITORÍA": "SERGEM se reserva el derecho de auditar las instalaciones y controles técnicos de los proveedores críticos para asegurar el cumplimiento del nivel de servicio (SLA)."
+            }
+        }
+
+    elif "plan de acción" in req or "preventivo y correctivo" in req:
+        return {
+            "codigo": "PR-10-001",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
+            "secciones": {
+                "1. OBJETIVO": "Garantizar la mejora continua del SGSI mediante el tratamiento de no conformidades, observaciones de auditoría e incidentes (Cláusula 10.1 y 10.2).",
+                "2. ALCANCE": "Todo el Sistema de Gestión de Seguridad de la Información de SERGEM.",
+                "3. METODOLOGÍA DE ACCIÓN": "1. Identificación de la brecha o hallazgo.\n2. Análisis de causa raíz (Método de los 5 Porqués o Diagrama de Ishikawa).\n3. Asignación de tareas correctivas con fechas límite en la matriz de mejora.\n4. Verificación de la eficacia de la acción tomada a los 30 días.",
+                "4. REGISTRO": "Todas las acciones preventivas y correctivas se encuentran debidamente trazadas y firmadas por la Dirección en las actas de revisión por la dirección."
+            }
+        }
+
+    # --- DOCUMENTOS YA EXISTENTES EN CÓDIGO ANTERIOR ---
+    elif "disciplinario" in req:
         return {
             "codigo": "PR-03-002",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
@@ -268,20 +367,6 @@ def obtener_datos_qms(requisito):
                 "CLÁUSULAS": "PRIMERA. El CONTRATISTA se obliga a garantizar la disponibilidad de los servicios tecnológicos contratados según los Acuerdos de Nivel de Servicio (SLA) pactados.\n\nSEGUNDA. Confidencialidad: El CONTRATISTA se obliga a no divulgar a terceras partes la 'Información confidencial' de SERGEM SAS.\n\nTERCERA. Cumplimiento Legal: El proveedor dará estricto cumplimiento a las disposiciones de la Ley 1581 de 2012 (Habeas Data).\n\nCUARTA. Auditoría: SERGEM se reserva el derecho de auditar los controles de seguridad del proveedor."
             }
         }
-        
-    elif "copia" in req or "restauración" in req or "backup" in req:
-        return {
-            "codigo": "PR-07-021",
-            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
-            "secciones": {
-                "1. OBJETIVO": "Garantizar la disponibilidad e integridad de la información mediante la realización de copias de seguridad en la nube y pruebas de restauración periódicas.",
-                "2. ALCANCE": "Aplica para todos los servidores y repositorios de datos críticos administrados por SERGEM y su proveedor SOLINUX.",
-                "3. DEFINICIONES": "• Backup Incremental: Copia solo de los datos modificados.\n• Restauración: Proceso de devolver los datos a su estado original.",
-                "4. REGLAS GENERALES / POLÍTICAS": "• SERGEM delega la administración técnica de los backups en la nube a su proveedor certificado SOLINUX.\n• Se deben ejecutar pruebas de restauración semestrales.",
-                "5. PROCEDIMIENTO (MATRIZ DE RELACIÓN)": "1. Ejecución automatizada de copias diarias y semanales en la nube.\n2. El área de TI solicita a SOLINUX la evidencia de ejecución exitosa.\n3. Semestralmente, se agenda una ventana para prueba de restauración en ambiente controlado.\n4. TI valida la integridad de los datos restaurados y firma el acta de conformidad.",
-                "6. LISTADO DE DOCUMENTOS REFERENCIADOS": "• Acta de Restauración SOLINUX."
-            }
-        }
 
     elif "retirado" in req or "base de datos" in req:
         return {
@@ -327,7 +412,6 @@ def generar_documento_pdf(requisito):
         logo_img = Paragraph("LOGO", style_bold_center)
         
     dia_aleatorio = random.randint(1, 28)
-    # FECHA DINÁMICA A PRUEBA DE FUTURO
     fecha_generada = f"{dia_aleatorio:02d}/05/{ANIO_ACTUAL}"
 
     header_data = [
@@ -575,37 +659,41 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        df_archivos_base = df_archivos[(~df_archivos['nombre'].str.contains("Actualizado", case=False, na=False)) & (df_archivos['tipo'] == 'Archivo')]
+        # Se remueve la exclusión de "Actualizado" para que detecte correctamente tus archivos manuales
+        df_archivos_base = df_archivos[df_archivos['tipo'] == 'Archivo'].copy()
+        
+        # Normalizar los nombres (sin acentos ni mayúsculas) para búsqueda perfecta
+        df_archivos_base['nombre_norm'] = df_archivos_base['nombre'].apply(remover_acentos)
 
         requisitos = {
             "Políticas de la seguridad de la información": ["POLITICA", "SEGURIDAD", "INFORMACION"],
-            "Políticas de protección de datos (Habeas Data)": ["HABEAS", "DATOS"],
-            "Procedimientos, planillas y/o documentos (capacitaciones)": ["CAPACITACION", "PLANILLA"],
+            "Políticas de protección de datos (Habeas Data)": ["PROTECCION", "DATOS"],
+            "Procedimientos, planillas y/o documentos (capacitaciones)": ["CAPACITACION"],
             "Procedimiento disciplinario": ["DISCIPLINARIO"],
-            "Inventario de TI": ["INVENTARIO", "TI"],
+            "Inventario de TI": ["INVENTARIO", "COMPUTADORES"],
             "Plan de actualización de los recursos tecnológicos": ["ACTUALIZACION", "RECURSOS"],
-            "Procedimientos de seguridad": ["PROCEDIMIENTO", "SEGURIDAD"],
-            "Hoja de vida de los equipos de cómputo y servidores": ["HOJA DE VIDA", "EQUIPO", "SERVIDOR"],
-            "Políticas de control de acceso": ["CONTROL", "ACCESO"],
-            f"Base de datos, personal retirado {ANIO_ACTUAL}": ["RETIRADO", "BASE"],
-            "Contratos y cláusulas de confidencialidad": ["CONFIDENCIALIDAD", "CLAUSULA"],
+            "Procedimientos de seguridad": ["PROCEDIMIENTOS", "SEGURIDAD"], 
+            "Hoja de vida de los equipos de cómputo y servidores": ["HOJA", "VIDA"],
+            "Políticas de control de acceso": ["CONTROL", "INGRESO"],
+            f"Base de datos, personal retirado {ANIO_ACTUAL}": ["RETIRADO"],
+            "Contratos y cláusulas de confidencialidad": ["CONFIDENCIALIDAD"],
             "Plan de respuesta a emergencias (Pérdida de info.)": ["EMERGENCIA", "PERDIDA"],
-            "Políticas de contraseñas": ["CONTRASEÑA", "CLAVE"],
-            "Políticas de uso de dispositivos móviles": ["MOVIL", "DISPOSITIVO"],
-            "Políticas, procedimientos de incidentes": ["INCIDENTE", "RESPONSABILIDAD"],
+            "Políticas de contraseñas": ["CONTRASEÑA"],
+            "Políticas de uso de dispositivos móviles": ["DISPOSITIVO", "MOVIL"],
+            "Políticas, procedimientos de incidentes": ["ROLES", "RESPONSABILIDADES"],
             "Procedimiento de notificación de incidentes": ["NOTIFICACION", "INCIDENTE"],
             "Inventario de Licenciamiento": ["LICENCIA", "INVENTARIO"],
-            "Documentos soporte de adquisición de licencias": ["SOPORTE", "ADQUISICION", "LICENCIA"],
-            "Certificación software legal (Representante Legal)": ["CERTIFICACION", "LEGAL", "REPRESENTANTE"],
+            "Documentos soporte de adquisición de licencias": ["SOPORTE", "ADQUISICION"],
+            "Certificación software legal (Representante Legal)": ["LEGAL", "REPRESENTANTE"],
             "Acuerdos de servicio (Proveedores/Terceros)": ["ACUERDO", "SERVICIO", "PROVEEDOR"],
-            "Copias de seguridad vigentes y estado": ["COPIA", "SEGURIDAD", "BACKUP"],
+            "Copias de seguridad vigentes y estado": ["COPIA", "SEGURIDAD", "VIGENTE"],
             "Prueba de restauración": ["RESTAURACION", "PRUEBA"],
             "Plan de continuidad del negocio": ["CONTINUIDAD", "NEGOCIO"],
             "Matriz de riesgos de TI": ["MATRIZ", "RIESGO"],
-            "Informe de pruebas de vulnerabilidad (Ethical Hacking)": ["VULNERABILIDAD", "HACKING", "ETHICAL"],
-            "Documentos de gestión de seguridad en contratos": ["CONTRATO", "SEGURIDAD", "PRESTADOR"],
+            "Informe de pruebas de vulnerabilidad (Ethical Hacking)": ["VULNERABILIDAD", "HACKING"],
+            "Documentos de gestión de seguridad en contratos": ["CONTRATO", "PRESTADOR"],
             "SGSI (Sistema de gestión de seguridad)": ["SGSI"],
-            "Plan de acción, preventivo y correctivo": ["PLAN", "ACCION", "PREVENTIVO", "CORRECTIVO"]
+            "Plan de acción, preventivo y correctivo": ["PLAN", "ACCION", "PREVENTIVO"]
         }
 
         archivos_encontrados = []
@@ -615,13 +703,18 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
         lista_faltantes = []
         
         for req, keywords in requisitos.items():
-            mask = df_archivos_base['nombre'].str.upper().str.contains('|'.join(keywords))
+            # Lógica estricta booleana AND: Todas las palabras deben estar en el nombre
+            mask = pd.Series(True, index=df_archivos_base.index)
+            for kw in keywords:
+                kw_norm = remover_acentos(kw)
+                mask = mask & df_archivos_base['nombre_norm'].str.contains(kw_norm)
+
             coincidencias = df_archivos_base[mask]
 
             if not coincidencias.empty:
                 candidato = coincidencias.iloc[0]
                 
-                es_excel_inventario = "INVENTARIO" in candidato['nombre'].upper() and candidato['nombre'].endswith(('.xls', '.xlsx'))
+                es_excel_inventario = "INVENTARIO" in candidato['nombre_norm'] and candidato['nombre'].endswith(('.xls', '.xlsx'))
                 
                 if es_excel_inventario: 
                     estado = "⚙️ Encontrado (Sincronizable)"
