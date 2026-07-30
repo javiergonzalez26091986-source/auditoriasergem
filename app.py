@@ -734,7 +734,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 archivos_encontrados.append({
                     "Requisito": req, 
                     "Estado": "❌ Faltante", 
-                    "Archivo Base": "Generar automáticamente"
+                    "Archivo Base": "Buscar automáticamente"
                 })
                 lista_faltantes.append(req)
 
