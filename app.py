@@ -659,8 +659,11 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Se remueve la exclusión de "Actualizado" para que detecte correctamente tus archivos manuales
-        df_archivos_base = df_archivos[df_archivos['tipo'] == 'Archivo'].copy()
+        # Se restringe la evaluación EXCLUSIVAMENTE a la carpeta "Auditoría actual"
+        df_archivos_base = df_archivos[
+            (df_archivos['tipo'] == 'Archivo') & 
+            (df_archivos['ruta'].str.contains('Auditoría actual', case=False, na=False))
+        ].copy()
         
         # Normalizar los nombres (sin acentos ni mayúsculas) para búsqueda perfecta
         df_archivos_base['nombre_norm'] = df_archivos_base['nombre'].apply(remover_acentos)
@@ -810,7 +813,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     
                     # --- NUEVO: VALIDADOR DE EXISTENCIA ---
                     archivos_mismo_nombre = df_archivos[df_archivos['nombre'] == doc['nombre']]
-                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría', case=False, na=False).any()
+                    ya_existe_en_auditoria = archivos_mismo_nombre['ruta'].str.contains('Auditoría actual', case=False, na=False).any()
                     
                     # Si el archivo aparece más de una vez (ej. copia) o ya está en la ruta destino
                     if len(archivos_mismo_nombre) > 1 or ya_existe_en_auditoria:
