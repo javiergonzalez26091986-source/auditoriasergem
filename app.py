@@ -387,6 +387,12 @@ if 'visor_id' not in st.session_state:
 if 'visor_nombre' not in st.session_state: 
     st.session_state.visor_nombre = None
 
+# VARIABLES GLOBALES PARA EL SALVAVIDAS DEL EXCEL
+if 'excel_backup' not in st.session_state:
+    st.session_state.excel_backup = None
+if 'mostrar_salvavidas' not in st.session_state:
+    st.session_state.mostrar_salvavidas = False
+
 st.sidebar.markdown('### 🗂️ Módulos de Evaluación')
 opciones = [
     "🏠 Inicio y Sincronización", 
@@ -672,10 +678,10 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
 
         with col_auto:
             st.markdown("### 🚀 Acción de Automatización y Empaque")
-            
-            st.info(f"Se copiarán los **{len(archivos_validos)}** documentos base y se **actualizará y anexará el Inventario de TI** de manera automática.")
+            st.info(f"Se copiarán los **{len(archivos_validos)}** documentos base y se **actualizará el Inventario de TI**.")
             
             if st.button("▶️ Generar Copias Oficiales en Drive", type="primary"):
+                st.session_state.mostrar_salvavidas = False # Reiniciar estado
                 st.markdown("#### Progreso de la copia y actualización:")
                 barra_progreso = st.progress(0)
                 texto_estado = st.empty()
@@ -693,12 +699,12 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                         if res_post.status_code == 200:
                             respuesta = res_post.json()
                             if respuesta.get("status") == "success": 
-                                resultados_finales.extend(respuesta.get("copiados", []))
+                                resultados_finales.append(f"✅ {doc['nombre']}")
                             else: 
                                 resultados_finales.append(f"❌ Omitido: {doc['nombre']}")
                         else:
                             resultados_finales.append(f"❌ Falló conexión: {doc['nombre']}")
-                    except Exception as e:
+                    except Exception:
                         resultados_finales.append(f"❌ Omitido (Archivo inaccesible): {doc['nombre']}")
                     
                     paso_actual += 1
@@ -710,6 +716,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     excel_modificado = actualizar_fecha_inventario_excel(inventario_id)
                     
                     if excel_modificado:
+                        st.session_state.excel_backup = excel_modificado # LO GUARDAMOS EN EL SALVAVIDAS
                         excel_b64 = base64.b64encode(excel_modificado).decode('utf-8')
                         payload_excel = {
                             "action": "subir_archivo",
@@ -724,18 +731,21 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                                 try:
                                     respuesta_json = res_excel.json()
                                     if respuesta_json.get("status") == "success":
-                                        resultados_finales.append("✅ Inventario de computadores - Actualizado 2026.xlsx subido (Revisa 'Mi unidad' si no está en la carpeta actual).")
+                                        resultados_finales.append("✅ Inventario_Actualizado_2026.xlsx subido.")
                                     else:
-                                        msg = respuesta_json.get("message", "Desconocido")
-                                        resultados_finales.append(f"❌ El Drive rechazó la subida del Excel: {msg}")
+                                        resultados_finales.append(f"❌ El Drive rechazó la subida. Usa el Salvavidas abajo.")
+                                        st.session_state.mostrar_salvavidas = True
                                 except:
-                                    resultados_finales.append("⚠️ El Drive contestó, pero la respuesta no fue válida.")
+                                    resultados_finales.append("⚠️ El Drive devolvió HTML (Error oculto). Usa el Salvavidas abajo.")
+                                    st.session_state.mostrar_salvavidas = True
                             else:
                                 resultados_finales.append(f"❌ Fallo HTTP {res_excel.status_code} al subir el Excel.")
+                                st.session_state.mostrar_salvavidas = True
                         except Exception as e:
-                            resultados_finales.append(f"⚠️ Error de conexión al subir el Excel: {e}")
+                            resultados_finales.append(f"⚠️ Error de conexión al subir el Excel. Usa el Salvavidas abajo.")
+                            st.session_state.mostrar_salvavidas = True
                     else:
-                        resultados_finales.append("❌ Falló la modificación del Excel base. Verifique permisos o el formato del archivo original.")
+                        resultados_finales.append("❌ Falló la modificación del Excel base.")
                         
                     paso_actual += 1
                     barra_progreso.progress(paso_actual / total_pasos)
@@ -746,3 +756,15 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                     for f in resultados_finales: 
                         st.write(f"- {f}")
                 st.cache_data.clear()
+
+            # --- BOTÓN SALVAVIDAS SI LA API FALLÓ ---
+            if st.session_state.mostrar_salvavidas and st.session_state.excel_backup:
+                st.error("🚨 Google Drive bloqueó la subida automática del Excel modificado (posiblemente por el tamaño del archivo, un límite de ejecución del script, o una redirección del servidor).")
+                st.info("💡 **SOLUCIÓN INMEDIATA:** El sistema ha capturado tu archivo de forma segura. Descárgalo dando clic en el botón de abajo y arrástralo manualmente a tu carpeta de 'Auditoría actual'.")
+                st.download_button(
+                    label="⬇️ Descargar Excel (Salvavidas)",
+                    data=st.session_state.excel_backup,
+                    file_name="Inventario de computadores - Actualizado 2026.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary"
+                )
