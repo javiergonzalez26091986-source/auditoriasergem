@@ -226,7 +226,7 @@ def obtener_datos_qms(requisito):
             "secciones": {
                 "1. OBJETIVO Y PROPÓSITO": "Definir los lineamientos técnicos y operativos para la creación, custodia, retención y protección de las copias de respaldo (backups) de la información institucional, mitigando riesgos de pérdida por fallas de hardware, ataques de ransomware o desastres físicos (Control A.8.13).",
                 "2. FRECUENCIA Y CRONOGRAMA DE RESPALDO": "• Backups Incrementales: Ejecución automatizada diaria a las 02:00 AM sobre bases de datos operativas y ERP.\n• Backups Completos (Full): Ejecución automatizada semanal todos los domingos en horario no hábil.\n• Almacenamiento: Las copias son transferidas de forma encriptada hacia los servidores en la nube del proveedor certificado SOLINUX.",
-                "3. POLÍTICA DE RETENCIÓN Y DISPONIBILIDAD", "Los respaldos diarios se retienen por un periodo mínimo de 30 días en entornos inmutables. Los respaldos mensuales se conservan por un ciclo de un (1) año para asegurar trazabilidad histórica y auditoría fiscal."
+                "3. POLÍTICA DE RETENCIÓN Y DISPONIBILIDAD": "Los respaldos diarios se retienen por un periodo mínimo de 30 días en entornos inmutables. Los respaldos mensuales se conservan por un ciclo de un (1) año para asegurar trazabilidad histórica y auditoría fiscal."
             }
         }
         
@@ -247,8 +247,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO CONTRACTUAL": "Asegurar que los riesgos asociados al acceso de proveedores externos, contratistas y prestadores de servicios tecnológicos a los activos de información de SERGEM sean mitigados eficazmente, cumpliendo con los controles A.5.19 y A.5.20 de la ISO/IEC 27001.",
-                "2. CLÁUSULAS DE SALVAGUARDA OBLIGATORIAS", "• Todo contrato con un tercero debe incluir inexorablemente un Anexo de Seguridad de la Información y un Acuerdo de Confidencialidad (NDA) debidamente firmado por el Representante Legal.\n• Los proveedores tecnológicos deben garantizar el cumplimiento de estándares equivalentes de ciberseguridad y protección de datos conforme a la Ley 1581 de 2012.",
-                "3. DERECHO DE INSPECCIÓN Y AUDITORÍA", "SERGEM se reserva de manera explícita el derecho de auditar los controles técnicos, instalaciones y políticas internas de los proveedores críticos para verificar el cumplimiento de los Acuerdos de Nivel de Servicio (SLA) pactados."
+                "2. CLÁUSULAS DE SALVAGUARDA OBLIGATORIAS": "• Todo contrato con un tercero debe incluir inexorablemente un Anexo de Seguridad de la Información y un Acuerdo de Confidencialidad (NDA) debidamente firmado por el Representante Legal.\n• Los proveedores tecnológicos deben garantizar el cumplimiento de estándares equivalentes de ciberseguridad y protección de datos conforme a la Ley 1581 de 2012.",
+                "3. DERECHO DE INSPECCIÓN Y AUDITORÍA": "SERGEM se reserva de manera explícita el derecho de auditar los controles técnicos, instalaciones y políticas internas de los proveedores críticos para verificar el cumplimiento de los Acuerdos de Nivel de Servicio (SLA) pactados."
             }
         }
 
@@ -258,7 +258,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DE MEJORA CONTINUA": "Garantizar la mejora continua del Sistema de Gestión de Seguridad de la Información (SGSI) mediante la gestión estructurada, análisis de causa raíz y tratamiento oportuno de las no conformidades, hallazgos de auditoría e incidentes detectados (Cláusulas 10.1 y 10.2 de la ISO/IEC 27001).",
-                "2. CICLO METODOLÓGICO DE ACCIÓN", "1. Identificación y registro formal del hallazgo o desvío.\n2. Análisis de causa raíz empleando metodologías de ingeniería (Diagrama de Ishikawa o los 5 Porqués).\n3. Definición, asignación y ejecución de la acción correctiva o preventiva con responsables y plazos definidos.\n4. Verificación posterior de la eficacia de la solución implementada por parte de la Dirección Administrativa."
+                "2. CICLO METODOLÓGICO DE ACCIÓN": "1. Identificación y registro formal del hallazgo o desvío.\n2. Análisis de causa raíz empleando metodologías de ingeniería (Diagrama de Ishikawa o los 5 Porqués).\n3. Definición, asignación y ejecución de la acción correctiva o preventiva con responsables y plazos definidos.\n4. Verificación posterior de la eficacia de la solución implementada por parte de la Dirección Administrativa."
             }
         }
 
@@ -268,8 +268,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO Y PROPÓSITO": "Limitar el acceso autorizado a los sistemas de información, redes de comunicación, bases de datos corporativas y sedes físicas de SERGEM Mensajería S.A.S., previniendo accesos no autorizados y protegiendo los activos críticos (Controles A.9.1 al A.9.4 de la ISO/IEC 27001).",
-                "2. POLÍTICA DE CONTROL DE ACCESO LÓGICO", "• El acceso a los sistemas operativos y ERP se basa estrictamente en el principio de 'Privilegio Mínimo' (otorgando únicamente los permisos indispensables para cumplir con las funciones del cargo).\n• Las cuentas de usuario de colaboradores retirados deben ser desactivadas de forma definitiva en un plazo no mayor a 24 horas tras la notificación oficial de Gestión Humana.",
-                "3. CONTROL DE ACCESO FÍSICO A INSTALACIONES", "• Las áreas de servidores (Data Center) y archivo central cuentan con control de acceso restringido mediante huella biométrica y/o llaves magnéticas.\n• El ingreso de visitantes a las instalaciones debe registrarse obligatoriamente en la portería, exigiendo presentación de documento de identidad, entrega de distintivo visible y supervisión permanente por un colaborador anfitrión."
+                "2. POLÍTICA DE CONTROL DE ACCESO LÓGICO": "• El acceso a los sistemas operativos y ERP se basa estrictamente en el principio de 'Privilegio Mínimo' (otorgando únicamente los permisos indispensables para cumplir con las funciones del cargo).\n• Las cuentas de usuario de colaboradores retirados deben ser desactivadas de forma definitiva en un plazo no mayor a 24 horas tras la notificación oficial de Gestión Humana.",
+                "3. CONTROL DE ACCESO FÍSICO A INSTALACIONES": "• Las áreas de servidores (Data Center) y archivo central cuentan con control de acceso restringido mediante huella biométrica y/o llaves magnéticas.\n• El ingreso de visitantes a las instalaciones debe registrarse obligatoriamente en la portería, exigiendo presentación de documento de identidad, entrega de distintivo visible y supervisión permanente por un colaborador anfitrión."
             }
         }
 
@@ -280,8 +280,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO Y MARCO LEGAL": "Establecer de manera clara y transparente los lineamientos, tipificación de faltas y el debido proceso sancionatorio aplicable ante el incumplimiento de las políticas y procedimientos del Sistema de Gestión de Seguridad de la Información (SGSI) en SERGEM Mensajería S.A.S.",
-                "2. TIPIFICACIÓN DE FALTAS CONTRA LA SEGURIDAD", "• Falta Leve: Desatención menor a recomendaciones de seguridad que no compromete datos críticos.\n• Falta Grave: Uso indebido de credenciales, omisión de bloqueo de estaciones de trabajo, revelación negligente de información operativa o manipulación no autorizada de equipos tecnológicos.",
-                "3. PROCEDIMIENTO DE DESCARGOS Y SANCIONES", "1. Reporte formal del incidente por parte de TI o jefatura inmediata a Gestión Humana.\n2. Citación a descargos por escrito al colaborador implicado con respeto irrestricto al debido proceso.\n3. Evaluación conjunta entre Gerencia y Dirección Administrativa para la aplicación de la sanción disciplinaria (amonestación escrita, suspensión temporal o terminación de contrato con justa causa conforme al Código Sustantivo del Trabajo)."
+                "2. TIPIFICACIÓN DE FALTAS CONTRA LA SEGURIDAD": "• Falta Leve: Desatención menor a recomendaciones de seguridad que no compromete datos críticos.\n• Falta Grave: Uso indebido de credenciales, omisión de bloqueo de estaciones de trabajo, revelación negligente de información operativa o manipulación no autorizada de equipos tecnológicos.",
+                "3. PROCEDIMIENTO DE DESCARGOS Y SANCIONES": "1. Reporte formal del incidente por parte de TI o jefatura inmediata a Gestión Humana.\n2. Citación a descargos por escrito al colaborador implicado con respeto irrestricto al debido proceso.\n3. Evaluación conjunta entre Gerencia y Dirección Administrativa para la aplicación de la sanción disciplinaria (amonestación escrita, suspensión temporal o terminación de contrato con justa causa conforme al Código Sustantivo del Trabajo)."
             }
         }
     
@@ -291,8 +291,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO ESTRATÉGICO": "Planificar, presupuestar y ejecutar la renovación tecnológica, mantenimiento preventivo y actualización de hardware y software de la compañía para mitigar riesgos asociados a la obsolescencia técnica (Control A.8.19 de la ISO/IEC 27001).",
-                "2. CICLO DE VIDA DE LOS ACTIVOS", "• Los equipos de cómputo y servidores tienen un ciclo de vida útil estimado entre 4 y 5 años.\n• Las licencias de sistemas operativos, paquetes de oficina y antivirus corporativos se actualizan de manera permanente a sus últimas versiones estables con soporte activo de fábrica.",
-                "3. PROCEDIMIENTO DE EJECUCIÓN", "El área de TI realiza un inventario anual consolidado, detecta componentes próximos a obsolescencia y presenta ante la Gerencia el plan de inversiones tecnológicas para su respectiva aprobación y ejecución presupuestal."
+                "2. CICLO DE VIDA DE LOS ACTIVOS": "• Los equipos de cómputo y servidores tienen un ciclo de vida útil estimado entre 4 y 5 años.\n• Las licencias de sistemas operativos, paquetes de oficina y antivirus corporativos se actualizan de manera permanente a sus últimas versiones estables con soporte activo de fábrica.",
+                "3. PROCEDIMIENTO DE EJECUCIÓN": "El área de TI realiza un inventario anual consolidado, detecta componentes próximos a obsolescencia y presenta ante la Gerencia el plan de inversiones tecnológicas para su respectiva aprobación y ejecución presupuestal."
             }
         }
         
@@ -314,7 +314,7 @@ def obtener_datos_qms(requisito):
             "secciones": {
                 "1. OBJETIVO DE CONTINGENCIA": "Establecer un plan de acción inmediato y estructurado para mitigar, responder y recuperar la operatividad de la infraestructura y la información ante incidentes críticos, ciberataques, fallas de servidores o desastres físicos (Control A.5.29 y A.8.14).",
                 "2. MÉTRICAS DE RECUPERACIÓN (RTO Y RPO)": "• RTO (Recovery Time Objective): Tiempo máximo tolerable de interrupción del sistema core fijado en 4 horas.\n• RPO (Recovery Point Objective): Punto máximo tolerable de pérdida de datos fijado en un ciclo de 24 horas.",
-                "3. PROTOCOLO DE RESPUESTA A CRISIS", "1. Aislamiento inmediato de los equipos o segmentos de red afectados para frenar propagación de amenazas.\n2. Notificación urgente al Comité de Crisis y a la Gerencia General.\n3. Activación del protocolo de restauración de respaldos en la nube junto al proveedor tecnológico SOLINUX."
+                "3. PROTOCOLO DE RESPUESTA A CRISIS": "1. Aislamiento inmediato de los equipos o segmentos de red afectados para frenar propagación de amenazas.\n2. Notificación urgente al Comité de Crisis y a la Gerencia General.\n3. Activación del protocolo de restauración de respaldos en la nube junto al proveedor tecnológico SOLINUX."
             }
         }
         
@@ -324,8 +324,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO TÉCNICO": "Definir los lineamientos estrictos para la creación, longitud, complejidad, protección y rotación periódica de las credenciales de acceso a los sistemas de información de SERGEM (Control A.9.4.3 de la ISO/IEC 27001).",
-                "2. ESTÁNDARES TÉCNICOS DE CONTRASEÑAS", "• Longitud mínima de ocho (8) caracteres combinando obligatoriamente letras mayúsculas, minúsculas, números y símbolos especiales.\n• Rotación obligatoria cada noventa (90) días calendario impidiendo la reutilización de las últimas cuatro contraseñas anteriores.",
-                "3. PROHIBICIONES Y BUENAS PRÁCTICAS", "Queda terminantemente prohibido compartir contraseñas con compañeros, escribirlas en notas adhesivas (post-its) visibles en los monitores o utilizar datos personales fácilmente adivinables (fechas de nacimiento, nombres de mascotas o familiares)."
+                "2. ESTÁNDARES TÉCNICOS DE CONTRASEÑAS": "• Longitud mínima de ocho (8) caracteres combinando obligatoriamente letras mayúsculas, minúsculas, números y símbolos especiales.\n• Rotación obligatoria cada noventa (90) días calendario impidiendo la reutilización de las últimas cuatro contraseñas anteriores.",
+                "3. PROHIBICIONES Y BUENAS PRÁCTICAS": "Queda terminantemente prohibido compartir contraseñas con compañeros, escribirlas en notas adhesivas (post-its) visibles en los monitores o utilizar datos personales fácilmente adivinables (fechas de nacimiento, nombres de mascotas o familiares)."
             }
         }
         
@@ -335,8 +335,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DE SEGURIDAD MÓVIL": "Establecer las normas de control y seguridad para el uso de dispositivos móviles corporativos o personales (política BYOD) que procesen, almacenen o transmitan información de la compañía (Control A.8.1 de la ISO/IEC 27001).",
-                "2. DIRECTRICES DE CONFIGURACIÓN Y USO", "• Todo equipo móvil que maneje correo o datos corporativos debe contar con cifrado de almacenamiento activo, PIN de bloqueo obligatorio y solución de seguridad o antivirus actualizado.\n• Se prohíbe almacenar bases de datos de clientes en memorias USB o dispositivos personales no autorizados por TI.",
-                "3. PROTOCOLO EN CASO DE PÉRDIDA O ROBO", "El colaborador tiene la obligación de reportar de forma inmediata la pérdida o hurto de su dispositivo móvil al departamento de TI para proceder con el bloqueo de cuentas y la ejecución remota de borrado seguro (Wipe)."
+                "2. DIRECTRICES DE CONFIGURACIÓN Y USO": "• Todo equipo móvil que maneje correo o datos corporativos debe contar con cifrado de almacenamiento activo, PIN de bloqueo obligatorio y solución de seguridad o antivirus actualizado.\n• Se prohíbe almacenar bases de datos de clientes en memorias USB o dispositivos personales no autorizados por TI.",
+                "3. PROTOCOLO EN CASO DE PÉRDIDA O ROBO": "El colaborador tiene la obligación de reportar de forma inmediata la pérdida o hurto de su dispositivo móvil al departamento de TI para proceder con el bloqueo de cuentas y la ejecución remota de borrado seguro (Wipe)."
             }
         }
 
@@ -346,8 +346,8 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DE GESTIÓN": "Estandarizar el procedimiento operativo para la detección temprana, reporte formal, clasificación por criticidad y resolución de incidentes de seguridad de la información (Controles A.5.24 al A.5.28 de la ISO/IEC 27001).",
-                "2. CANALES Y PLAZOS DE REPORTE", "• Todo colaborador o tercero que detecte una anomalía, comportamiento extraño en el software, pérdida de equipos o sospecha de acceso no autorizado tiene el deber ético y laboral de reportarlo de inmediato a través de la Mesa de Ayuda.\n• Los incidentes clasificados como críticos deben ser escalados y notificados a la Dirección en un plazo inferior a una (1) hora.",
-                "3. REGISTRO Y LECCIONES APRENDIDAS", "Cada incidente resuelto debe documentarse en la bitácora de TI detallando la causa raíz, el tiempo de afectación y las medidas preventivas adoptadas para evitar su repetición futura."
+                "2. CANALES Y PLAZOS DE REPORTE": "• Todo colaborador o tercero que detecte una anomalía, comportamiento extraño en el software, pérdida de equipos o sospecha de acceso no autorizado tiene el deber ético y laboral de reportarlo de inmediato a través de la Mesa de Ayuda.\n• Los incidentes clasificados como críticos deben ser escalados y notificados a la Dirección en un plazo inferior a una (1) hora.",
+                "3. REGISTRO Y LECCIONES APRENDIDAS": "Cada incidente resuelto debe documentarse en la bitácora de TI detallando la causa raíz, el tiempo de afectación y las medidas preventivas adoptadas para evitar su repetición futura."
             }
         }
         
@@ -357,7 +357,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "CONTRATISTA / PROVEEDOR",
             "secciones": {
                 "1. OBJETO Y MARCO CONTRACTUAL": "Establecer los términos y condiciones obligatorias sobre Acuerdos de Nivel de Servicio (SLA) y Salvaguarda de Confidencialidad aplicables a todos los proveedores y terceros que presten servicios tecnológicos o logísticos a SERGEM Mensajería S.A.S.",
-                "2. CLÁUSULAS DE CONFIDENCIALIDAD ESTRICTA", "PRIMERA: El CONTRATISTA se obliga a mantener absoluta reserva sobre toda la información comercial, operativa, de clientes y bases de datos a las que tenga acceso, catalogándola como 'Información Confidencial'.\n\nSEGUNDA: El CONTRATISTA dará estricto cumplimiento a la normatividad de protección de datos personales (Ley 1581 de 2012).\n\nTERCERA: Queda prohibida la divulgación, comercialización o uso de los datos para fines distintos a los estrictamente pactados en el contrato principal de servicios."
+                "2. CLÁUSULAS DE CONFIDENCIALIDAD ESTRICTA": "PRIMERA: El CONTRATISTA se obliga a mantener absoluta reserva sobre toda la información comercial, operativa, de clientes y bases de datos a las que tenga acceso, catalogándola como 'Información Confidencial'.\n\nSEGUNDA: El CONTRATISTA dará estricto cumplimiento a la normatividad de protección de datos personales (Ley 1581 de 2012).\n\nTERCERA: Queda prohibida la divulgación, comercialización o uso de los datos para fines distintos a los estrictamente pactados en el contrato principal de servicios."
             }
         }
 
@@ -367,7 +367,7 @@ def obtener_datos_qms(requisito):
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DE CONTROL DE PERSONAL": "Asegurar que los procesos de desvinculación laboral o terminación de contratos con terceros incluyan la revocación oportuna y total de los accesos lógicos y físicos a las instalaciones y sistemas de SERGEM (Control A.6.5 de la ISO/IEC 27001).",
-                "2. PROTOCOLO DE DESVINCULACIÓN", "• Gestión Humana tiene la obligación de notificar formalmente al departamento de TI la novedad de retiro de cualquier colaborador el mismo día en que se genera la novedad.\n• El equipo de TI procederá a inhabilitar de manera inmediata (plazo máximo de 24 horas) las cuentas de correo electrónico, accesos al ERP, VPN y bases de datos.\n• Es requisito obligatorio para la firma del paz y salvo laboral la devolución de equipos portátiles, carnés, fichas de acceso y tokens de seguridad."
+                "2. PROTOCOLO DE DESVINCULACIÓN": "• Gestión Humana tiene la obligación de notificar formalmente al departamento de TI la novedad de retiro de cualquier colaborador el mismo día en que se genera la novedad.\n• El equipo de TI procederá a inhabilitar de manera inmediata (plazo máximo de 24 horas) las cuentas de correo electrónico, accesos al ERP, VPN y bases de datos.\n• Es requisito obligatorio para la firma del paz y salvo laboral la devolución de equipos portátiles, carnés, fichas de acceso y tokens de seguridad."
             }
         }
         
@@ -379,7 +379,7 @@ def obtener_datos_qms(requisito):
             "secciones": {
                 "1. OBJETIVO DEL DOCUMENTO Y MARCO NORMATIVO": f"Establecer los lineamientos técnicos, políticas restrictivas y controles operativos aplicables al proceso de: {requisito.title()}, en estricto cumplimiento del marco normativo internacional de la ISO/IEC 27001 para la seguridad de la información.",
                 "2. ALCANCE ORGANIZACIONAL": "Aplica de manera integral para todos los procesos operativos, administrativos, directivos y proveedores de servicios tecnológicos de SERGEM Mensajería S.A.S. a nivel nacional.",
-                "3. DIRECTRICES Y CONTROLES OPERATIVOS", "• Todo el personal involucrado debe adherirse estrictamente a las pautas de control definidas en este documento.\n• El área de TI y la Dirección Administrativa realizarán supervisiones y auditorías preventivas periódicas para verificar el grado de cumplimiento.\n• Cualquier desvío detectado será objeto de revisión correctiva inmediata.",
+                "3. DIRECTRICES Y CONTROLES OPERATIVOS": "• Todo el personal involucrado debe adherirse estrictamente a las pautas de control definidas en este documento.\n• El área de TI y la Dirección Administrativa realizarán supervisiones y auditorías preventivas periódicas para verificar el grado de cumplimiento.\n• Cualquier desvío detectado será objeto de revisión correctiva inmediata.",
                 "4. COMPROMISOS Y MEJORA CONTINUA": "Garantizar la protección permanente de los activos informáticos, asegurando la confidencialidad, integridad y disponibilidad frente a riesgos o amenazas internas y externas."
             }
         }
