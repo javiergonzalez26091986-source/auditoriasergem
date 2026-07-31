@@ -12,7 +12,7 @@ import unicodedata
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, CondPageBreak, KeepTogether, Flowable
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
@@ -163,30 +163,7 @@ def remover_acentos(texto):
     return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
 
 # -----------------------------------------------------------------------------
-# 3. CLASE AUXILIAR DE ESPACIO DINÁMICO (CERO DEFECTOS EN FIRMAS)
-# -----------------------------------------------------------------------------
-class BottomSpacer(Flowable):
-    """
-    Este componente rellena el espacio vacío de la página. Empuja las firmas
-    exactamente al borde inferior. Si no hay espacio, desencadena un CondPageBreak.
-    """
-    def __init__(self, block_height):
-        Flowable.__init__(self)
-        self.block_height = block_height
-
-    def wrap(self, availWidth, availHeight):
-        self.width = availWidth
-        if availHeight < self.block_height:
-            self.height = 0 
-        else:
-            self.height = availHeight - self.block_height
-        return self.width, self.height
-
-    def draw(self):
-        pass
-
-# -----------------------------------------------------------------------------
-# 4. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN 100% EXHAUSTIVA Y PROFESIONAL ISO 27001)
+# 3. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN 100% EXHAUSTIVA Y PROFESIONAL ISO 27001)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -344,7 +321,7 @@ def obtener_datos_qms(requisito):
     elif "capacitaci" in req or "planilla" in req:
         return {
             "codigo": "PR-08-001",
-            "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
+            "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
                 "1. OBJETIVO DEL PROGRAMA DE CONCIENCIACIÓN": "Garantizar de manera documentada que la totalidad del personal administrativo, operativo y directivo de SERGEM Mensajería S.A.S. reciba formación técnica, concienciación periódica y actualización legal en materia de seguridad de la información y protección de datos. Da estricto cumplimiento al Control A.6.3 (Concienciación, educación y capacitación) de la norma ISO/IEC 27001.",
                 "2. ALCANCE Y COBERTURA NACIONAL": "El programa de capacitación y sensibilización (Security Awareness) es de carácter transversal e involucra a todas las áreas de la compañía. Se despliega mediante sesiones presenciales y/o virtuales cubriendo a los trabajadores en Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
@@ -435,7 +412,7 @@ def obtener_datos_qms(requisito):
             }
         }
         
-    # 19. PLANTILLA MAESTRA GENÉRICA DE RESPALDO (FALLBACK) PARA CUALQUIER DOCUMENTO NO ESPECIFICADO
+    # 19. PLANTILLA MAESTRA GENÉRICA DE RESPALDO
     else:
         cod_aleatorio = random.randint(100, 999)
         titulo_seccion = requisito.title()
@@ -449,7 +426,7 @@ def obtener_datos_qms(requisito):
                 "3. DEFINICIONES CLAVES Y TÉRMINOS TÉCNICOS": "Para la correcta comprensión y ejecución de las directrices plasmadas en este manual, se establecen las siguientes definiciones unificadas:\n\n• SGSI (Sistema de Gestión de Seguridad de la Información): Conjunto de políticas, procedimientos, directrices y recursos asociados para administrar y proteger integralmente la información corporativa, apoyados en la norma ISO 27001.\n• Freeway: Aplicativo de software y sistema core principal logístico mediante el cual SERGEM gestiona inventarios, rutas, envíos y datos de destinatarios finales.\n• Activo de Información: Cualquier conocimiento, base de datos, archivo de Excel, software, servidor, equipo de cómputo, o documentación impresa que tiene un valor operativo o estratégico para la compañía.\n• Evento / Incidente de Seguridad: Un suceso o serie de eventos anómalos o inesperados, confirmados o bajo sospecha, que amenazan con comprometer la seguridad de las redes de SERGEM, paralizando la operación o filtrando datos privados al exterior.",
                 "4. DIRECTRICES Y CONTROLES OPERATIVOS (ISO/IEC 27001)": f"Para la ejecución y mantenimiento adecuado de las actividades concernientes a {titulo_seccion}, el personal involucrado deberá observar y acatar, sin excepción, el siguiente esquema de reglas inquebrantables de seguridad de la información:\n\n1. Principio de Menor Privilegio Lógico: Todo acceso a carpetas compartidas, sistemas operativos, ERP o repositorios vinculados a esta actividad deberá estar restringido al mínimo indispensable para realizar la función encomendada. Todo permiso adicional deberá requerir justificación escrita.\n2. Trazabilidad y Bitácoras Inmutables: Todo registro, transacción crítica, auditoría de logs del sistema (Windows/Linux) o formulario físico derivado de este proceso deberá ser almacenado, protegido contra modificaciones accidentales y custodiado por un periodo de retención no menor a doce (12) meses para fines periciales y de auditoría externa (Kreston o entes de control).\n3. Prohibición de Extracción de Datos: Queda estrictamente prohibida la exportación, clonación, copia por USB o envío hacia correos electrónicos personales (Hotmail, Gmail, Yahoo, etc.) de información confidencial, bases de datos operativas o configuraciones de red asociadas a este documento. \n4. Intervención Rápida ante Incidentes: Si un colaborador llegase a observar una vulneración, lentitud anómala severa, sospecha de software malicioso o elusión de los parámetros aquí establecidos, deberá aplicar la contención primaria e informar obligatoriamente en un tiempo menor a treinta (30) minutos a la Mesa de Ayuda de TI (Helpdesk).",
                 "5. ROLES Y MATRIZ DE RESPONSABILIDADES ASIGNADAS": "El aseguramiento de este proceso es un trabajo conjunto y multidisciplinario en la compañía. Por lo tanto, se fijan las siguientes asignaciones y deberes según el cargo directivo y operativo:\n\n• Dirección General: Proveerá de manera oportuna y proporcional los recursos financieros, tecnológicos y el talento humano calificado para garantizar el mantenimiento y mejora del SGSI.\n• Dirección Administrativa (Yesenia Beltrán): Actuará como gestora y principal aval del cumplimiento normativo del SGSI, liderando las auditorías, programando las revisiones de matriz de riesgos y garantizando la coherencia documental corporativa.\n• Departamento de TI e Infraestructura: Recae sobre ellos la responsabilidad completamente técnica de diseñar, implementar, parchear, asegurar criptográficamente y auditar la plataforma tecnológica, de manera que los bloqueos y alertas respalden sistémicamente las reglas descritas.\n• Jefes de Área y Colaboradores Generales: Acatar invariablemente cada directriz, manteniendo en alto la cultura del cuidado del activo corporativo. Ignorar las reglas no exime de culpa al usuario.",
-                "6. RÉGIMEN DISCIPLINARIO Y SANCIONES POR INCUMPLIMIENTO": f"Las disposiciones establecidas en el presente documento operativo de {titulo_seccion} son un mandato directo de la Alta Gerencia de SERGEM. \n\nEl incumplimiento, la omisión, la evasión de controles técnicos, la negligencia grave que ocasione pérdida de disponibilidad, o la vulneración intencionada de estas normativas, constituye una violación sustancial y grave a las políticas de seguridad corporativas y obligaciones contractuales.\n\nLa detección de cualquier irregularidad será tipificada como falta y activará inmediatamente el proceso de descargos y el protocolo estipulado en el Reglamento Interno de Trabajo. Dependiendo de la afectación técnica y comercial del incidente, las medidas adoptadas por Gestión Humana podrán resultar en un llamado de atención con copia a la hoja de vida, suspensiones no remuneradas o la terminación unilateral e inmediata del contrato laboral por justa causa. Adicionalmente, si el incumplimiento derivase en la exfiltración o robo de bases de datos de clientes, SERGEM radicará las denuncias penales correspondientes ante la Fiscalía General de la Nación amparados en la ley contra delitos informáticos."
+                "6. RÉGIMEN DISCIPLINARIO Y SANCIONES POR INCUMPLIMIENTO": f"Las disposiciones establecidas en el presente documento operativo de {titulo_seccion} son un mandato directo de la Alta Gerencia de SERGEM. \n\nEl incumplimiento, la omisión, la evasión de controles técnicos, la negligencia grave que ocasione pérdida de disponibilidad, o la vulneración intencionada de estas normativas, constituye una violación sustancial y grave a las políticas de seguridad corporativas y obligaciones contractuales.\n\nLa detección de cualquier irregularidad será tipificada como falta y activará inmediatamente el proceso de descargos y el protocolo estipulado en el Reglamento Interno de Trabajo. Dependiendo de la afectación técnica y comercial del incidente, las medidas adoptadas por Gestión Humana podrán resultar en un llamado de atención con copia a la hoja de vida, suspensiones no remuneradas o la terminación unilateral e inmediata del contrato laboral por justa causa."
             }
         }
 
@@ -457,18 +434,15 @@ def generar_documento_pdf(requisito):
     datos_doc = obtener_datos_qms(requisito)
     output = io.BytesIO()
     
-    # Configuración de márgenes óptimos
     doc = SimpleDocTemplate(output, pagesize=letter, rightMargin=0.75*inch, leftMargin=0.75*inch, topMargin=0.6*inch, bottomMargin=0.6*inch)
     elements = []
     styles = getSampleStyleSheet()
     
-    # Estilos robustos de texto
     style_center = ParagraphStyle(name='Center', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
     style_normal = ParagraphStyle(name='Justify', parent=styles['Normal'], alignment=TA_JUSTIFY, fontName='Helvetica', fontSize=10, leading=14)
     style_bold_center = ParagraphStyle(name='BoldCenter', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
     style_title = ParagraphStyle(name='SectionTitle', parent=styles['Normal'], alignment=TA_LEFT, fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#002b5e'), spaceAfter=8)
 
-    # Logo del Header
     logo_path = "sergemLogo.png"
     if os.path.exists(logo_path):
         logo_img = RLImage(logo_path, width=1.0*inch, height=1.0*inch)
@@ -478,7 +452,6 @@ def generar_documento_pdf(requisito):
     dia_aleatorio = random.randint(1, 28)
     fecha_generada = f"{dia_aleatorio:02d}/05/{ANIO_ACTUAL}"
 
-    # Encabezado (Header Tabla ISO)
     header_data = [
         [logo_img, Paragraph(requisito.upper(), style_center), '', '', logo_img],
         ['', Paragraph(f"Código: {datos_doc['codigo']}", style_bold_center), Paragraph("Versión No.1", style_bold_center), Paragraph(fecha_generada, style_bold_center), '']
@@ -498,7 +471,6 @@ def generar_documento_pdf(requisito):
     elements.append(t_header)
     elements.append(Spacer(1, 0.25*inch))
 
-    # Construcción de las secciones
     for titulo, contenido in datos_doc['secciones'].items():
         contenido_rl = contenido.replace('\n', '<br/>')
         body_data = [
@@ -519,16 +491,16 @@ def generar_documento_pdf(requisito):
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    # SOLUCIÓN DE RECUADROS DE FIRMA
-    elements.append(CondPageBreak(120))
-    elements.append(BottomSpacer(100))
+    # SOLUCIÓN DE RECUADROS: Espacio natural y KeepTogether (Evita desfases)
+    elements.append(Spacer(1, 0.5*inch))
 
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
+        # Se remueven los textos de "Firma: ______" según instrucción
         sig_data = [
             [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
-            [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa<br/><br/>Firma: ________________________", style_normal),
-             Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa<br/><br/>Firma: ________________________", style_normal),
-             Paragraph("Nombre: José Reinel Torres<br/>Cargo: Gerente General<br/><br/>Firma: ________________________", style_normal)]
+            [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
+             Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
+             Paragraph("Nombre: José Reinel Torres<br/>Cargo: Gerente General", style_normal)]
         ]
         t_sig = Table(sig_data, colWidths=[2.33*inch, 2.33*inch, 2.33*inch])
         t_sig.setStyle(TableStyle([
@@ -540,7 +512,7 @@ def generar_documento_pdf(requisito):
             ('LEFTPADDING', (0,0), (-1,-1), 8),
             ('RIGHTPADDING', (0,0), (-1,-1), 8),
         ]))
-        # KeepTogether ancla herméticamente la tabla
+        # KeepTogether ancla herméticamente la tabla, si no cabe, pasa a la otra hoja.
         elements.append(KeepTogether(t_sig))
     else:
         firma_texto = Paragraph(f"<br/><br/>{datos_doc['tipo_firma']}: ___________________________________", style_bold_center)
