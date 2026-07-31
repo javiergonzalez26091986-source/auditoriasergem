@@ -12,7 +12,7 @@ import unicodedata
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, PageBreak, Flowable
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, CondPageBreak, KeepTogether, Flowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
@@ -163,17 +163,23 @@ def remover_acentos(texto):
     return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
 
 # -----------------------------------------------------------------------------
-# 3. CLASE AUXILIAR PARA EMPUJAR FIRMAS AL FONDO EXACTO DE LA PÁGINA
+# 3. CLASE AUXILIAR DE ESPACIO DINÁMICO (CERO DEFECTOS EN FIRMAS)
 # -----------------------------------------------------------------------------
-class BottomPusher(Flowable):
-    def __init__(self, block_height=95):
-        super().__init__()
+class BottomSpacer(Flowable):
+    """
+    Este componente rellena el espacio vacío de la página. Empuja las firmas
+    exactamente al borde inferior. Si no hay espacio, desencadena un CondPageBreak.
+    """
+    def __init__(self, block_height):
+        Flowable.__init__(self)
         self.block_height = block_height
 
     def wrap(self, availWidth, availHeight):
         self.width = availWidth
-        target_space = availHeight - self.block_height - 15
-        self.height = max(0, target_space)
+        if availHeight < self.block_height:
+            self.height = 0 
+        else:
+            self.height = availHeight - self.block_height
         return self.width, self.height
 
     def draw(self):
@@ -185,216 +191,265 @@ class BottomPusher(Flowable):
 def obtener_datos_qms(requisito):
     req = requisito.lower()
     
+    # 1. POLÍTICAS DE SEGURIDAD
     if "políticas de la seguridad" in req or "política de seguridad" in req:
         return {
             "codigo": "PO-01-001",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer la declaración formal de la Dirección General de SERGEM Mensajería S.A.S. respecto al compromiso inquebrantable con la Seguridad de la Información. Este marco da cumplimiento estricto a las directrices del control A.5.1 de la norma internacional ISO/IEC 27001:2022, asegurando la protección integral de los activos tecnológicos, bases de datos logísticas y canales de comunicación frente a amenazas internas y externas, alineándose con la legislación colombiana vigente (Ley 1581 de 2012 de Protección de Datos Personales y Ley 1273 de 2009 de Delitos Informáticos).",
-                "2. ALCANCE ORGANIZACIONAL": "La presente política es de mandatorio cumplimiento para todos los colaboradores directos, personal temporal, contratistas, prestadores de servicios y terceros que operen o tengan acceso a la infraestructura tecnológica, sistemas core (Freeway), redes de datos y activos físicos de SERGEM a nivel nacional en las sucursales de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
-                "3. PRINCIPIOS RECTORES DEL SGSI": "• Confidencialidad: Garantizar que la información corporativa, financiera y de clientes solo sea accesible por personal debidamente autorizado bajo el principio de privilegio mínimo.\n• Integridad: Proteger la exactitud, completitud y validez de los datos logísticos y de mensajería frente a alteraciones, suplantaciones o modificaciones no autorizadas.\n• Disponibilidad: Asegurar que los sistemas de información, bases de datos y plataformas operativas permanezcan accesibles ininterrumpidamente para los usuarios y canales de atención autorizados.",
-                "4. GOBIERNO Y ROLES DE SEGURIDAD": "La Alta Gerencia y el Comité de Seguridad de la Información son responsables de revisar anual o extraordinariamente la vigencia de este documento. El Departamento de Tecnología e Infraestructura supervisará la implementación técnica de los controles operativos, mientras que cada jefatura de área garantizará la difusión y acatamiento por parte de sus equipos de trabajo.",
-                "5. GESTIÓN DE EXCEPCIONES Y RÉGIMEN SANCIONATORIO": "Cualquier intento de vulneración, desviación o incumplimiento de los descritos en esta política será calificado como falta grave y sometido de manera inmediata al Procedimiento Disciplinario interno (PR-03-002), sin perjuicio de las acciones legales penales o civiles a que haya lugar ante los juzgados de la República de Colombia."
+                "1. OBJETIVO Y MARCO DE REFERENCIA": "Establecer y formalizar la declaración suprema de la Dirección General de SERGEM Mensajería S.A.S. respecto a su compromiso inquebrantable con la Gestión y Seguridad de la Información. Este marco estratégico da cumplimiento estricto a las directrices de la norma internacional ISO/IEC 27001:2022 (específicamente la cláusula 5.2 y el control A.5.1), asegurando la protección integral de los activos tecnológicos, la infraestructura de comunicaciones, las bases de datos de clientes y los procesos logísticos frente a amenazas tanto internas como externas. Todo esto alineado obligatoriamente a la legislación colombiana vigente, haciendo énfasis en la Ley 1581 de 2012 (Protección de Datos Personales o Habeas Data) y la Ley 1273 de 2009 (Protección de la Información y de los Datos).",
+                "2. ALCANCE ORGANIZACIONAL Y APLICABILIDAD": "La presente Política de Seguridad de la Información es de carácter mandatorio y cumplimiento irrestricto para todos los colaboradores con contrato directo, personal temporal en misión, estudiantes en práctica, contratistas independientes, prestadores de servicios tecnológicos (proveedores de nube y telecomunicaciones) y terceros que operen, mantengan o tengan cualquier nivel de acceso a la infraestructura tecnológica y activos físicos de SERGEM Mensajería S.A.S.\n\nEste alcance cubre operativamente la matriz principal y la totalidad de sucursales a nivel nacional ubicadas en las ciudades de: Cali (Sede Principal), Bogotá, Medellín, Barranquilla, Cartagena e Ibagué. Aplica para la plataforma central (Freeway) y los repositorios documentales físicos y lógicos.",
+                "3. DEFINICIONES CLAVES Y TÉRMINOS": "• Confidencialidad: Propiedad que determina que la información no esté disponible ni sea revelada a individuos, entidades o procesos no autorizados (protección del secreto comercial y datos de clientes).\n• Integridad: Propiedad de salvaguardar la exactitud y completitud de los activos, evitando modificaciones no trazables en los sistemas de despacho y ruteo.\n• Disponibilidad: Propiedad de que la información y los sistemas logísticos (Freeway) sean accesibles y utilizables de manera continua cuando lo requiera una entidad autorizada.\n• Activo de Información: Todo componente lógico o físico que tiene valor vital para SERGEM y requiere protección.\n• SGSI: Sistema de Gestión de Seguridad de la Información.",
+                "4. DIRECTRICES ESTRATÉGICAS Y PRINCIPIOS RECTORES": "Para dar cumplimiento a la estrategia de seguridad, SERGEM Mensajería S.A.S. se compromete a:\n\n1. Privilegio Mínimo: Garantizar que la asignación de perfiles y credenciales de acceso a la información comercial, financiera y operativa de clientes logísticos sea otorgada estrictamente bajo el principio de 'necesidad de conocer' (Need-to-Know).\n2. Protección del Dato Personal (Ley 1581): Restringir la extracción, comercialización o tratamiento indebido de las guías de transporte y bases de destinatarios, aplicando cifrado cuando dichos datos transiten por canales públicos.\n3. Monitoreo y Auditoría: Evaluar y someter continuamente la red corporativa y el ERP a escaneos de vulnerabilidades, auditorías internas y seguimientos de firmas externas especializadas (ej. Kreston) para identificar y remediar fallos técnicos tempranamente.\n4. Concienciación Continua: Proveer formación, entrenamiento y sensibilización semestral a todos los empleados sobre amenazas actuales (como Ransomware, Phishing e Ingeniería Social).\n5. Continuidad del Negocio: Disponer de los recursos técnicos, respaldos (backups en la nube) y planes de contingencia (DRP) necesarios para garantizar la operación frente a desastres naturales o ciberataques.",
+                "5. GOBIERNO, ROLES Y RESPONSABILIDADES": "• La Alta Gerencia (Gerente General): Es la máxima autoridad responsable de proveer los recursos económicos, tecnológicos y humanos para el sostenimiento y mejora continua del SGSI.\n• Dirección Administrativa: Liderar los procesos de auditoría, evaluar los riesgos junto a las áreas operativas, y verificar la actualización anual de estas políticas.\n• Departamento de TI e Infraestructura: Es el responsable técnico de implementar, administrar y supervisar los firewalls, controles de acceso lógicos, redes inalámbricas seguras, antivirus (EDR) y el respaldo inmutable de datos logísticos.\n• Jefaturas de Área / Supervisores: Tienen el deber de vigilar el acatamiento de las reglas de seguridad en su personal a cargo.\n• Colaborador General: Tiene el deber ético y legal de acatar la política de escritorio limpio, no compartir sus contraseñas, no usar software pirata y reportar a la Mesa de Ayuda cualquier incidente sospechoso de manera inmediata.",
+                "6. GESTIÓN DE INCUMPLIMIENTO Y RÉGIMEN DISCIPLINARIO": "Cualquier intento de vulneración, desviación voluntaria, negligencia severa o incumplimiento manifiesto de los lineamientos descritos en esta política principal de seguridad, será considerado como una falta grave. \n\nDichos incidentes serán escalados sin excepción y sometidos de manera inmediata al Procedimiento Disciplinario interno (PR-03-002) liderado por Gestión Humana y la Dirección Administrativa. Las consecuencias pueden derivar en sanciones administrativas, suspensión, terminación unilateral del contrato de trabajo por justa causa, e incluso el inicio de acciones civiles y penales ante los juzgados de la República de Colombia."
             }
         }
         
+    # 2. PROCEDIMIENTOS DE SEGURIDAD
     elif "procedimientos de seguridad" in req:
         return {
             "codigo": "PR-05-010",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO OPERATIVO": "Documentar los procedimientos operativos estándar (SOP) de seguridad física y lógica aplicados en el procesamiento diario de mensajería y logística, cumpliendo rigurosamente con el control A.5.37 y controles operativos de la norma ISO/IEC 27001.",
-                "2. RESPONSABILIDADES Y ROLES": "El Departamento de Tecnología e Infraestructura, en estrecha coordinación con la Jefatura de Operaciones, es el responsable directo de vigilar la ejecución estricta de estos protocolos en cada una de las sucursales de la compañía a nivel nacional.",
-                "3. PROTOCOLOS DE ACCESO LÓGICO Y AUTENTICACIÓN": "• El acceso a los sistemas core (Freeway y bases de datos asociadas) exige autenticación robusta obligatoria mediante doble factor (2FA) y credenciales alfanuméricas complejas con rotación estricta trimestral.\n• Se prohíbe terminantemente el uso de cuentas genéricas, cuentas compartidas o la post-inscripción de sesiones de usuario en estaciones de trabajo corporativas.",
-                "4. SEGURIDAD EN EL PUESTO DE TRABAJO (ESCRITORIO LIMPIO)": "• Todo colaborador tiene la obligación de bloquear su estación de trabajo al ausentarse de su escritorio mediante el comando de teclado corporativo (Windows + L).\n• Queda prohibido dejar documentos físicos con información de guías, datos de clientes o estados financieros sobre escritorios o zonas comunes al finalizar la jornada laboral o durante periodos de pausa.",
-                "5. SEGURIDAD EN REDES Y COMUNICACIONES": "La red Wi-Fi corporativa se encuentra segmentada en VLANs independientes. Las terminales de invitados operan en una red aislada sin permisos de enrutamiento hacia los servidores centrales de bases de datos."
+                "1. OBJETIVO OPERATIVO Y NORMATIVO": "Documentar e implementar los procedimientos operativos estándar (SOP) técnicos, lógicos y físicos de seguridad aplicables al procesamiento diario de la logística, distribución y mensajería en SERGEM S.A.S. Este documento garantiza el estricto cumplimiento del control A.5.37 (Procedimientos operativos) de la norma ISO/IEC 27001:2022, asegurando que las operaciones informáticas y logísticas diarias se ejecuten de forma coherente, minimizando el riesgo de errores humanos o fallos de sistemas.",
+                "2. ALCANCE Y APLICABILIDAD": "Estos procedimientos operativos aplican a todas las instalaciones físicas de SERGEM (Cali, Bogotá, Medellín, Barranquilla, Cartagena, Ibagué), así como al entorno de servidores en la nube, redes LAN/WAN y estaciones de trabajo de operarios, supervisores y personal administrativo. Abarca desde el inicio de sesión hasta el cierre seguro de las operaciones al final de la jornada.",
+                "3. PROTOCOLOS DE ACCESO LÓGICO Y AUTENTICACIÓN": "• Todo acceso a los sistemas core logísticos (Freeway), ERP financiero y bases de datos transaccionales, exige una autenticación robusta y personalizada obligatoria.\n• El uso del Doble Factor de Autenticación (2FA) es mandatorio para conexiones remotas (VPN) y accesos con privilegios administrativos.\n• Se prohíbe terminantemente, bajo pena de falta grave, el uso de cuentas genéricas (ejemplo: 'operador1'), cuentas compartidas entre turnos, o la post-inscripción de credenciales (dejar el usuario logueado en la pantalla de la estación corporativa para que el compañero de turno la utilice).",
+                "4. SEGURIDAD EN EL PUESTO DE TRABAJO (ESCRITORIO LIMPIO Y PANTALLA LIMPIA)": "• Pantalla Limpia: Todo colaborador, independientemente de su cargo, tiene la obligación ineludible de bloquear la pantalla de su estación de trabajo (Comando nativo corporativo: Windows + L) cada vez que deba ausentarse de su asiento, por más breve que sea la pausa.\n• Escritorio Limpio: Queda estrictamente prohibido dejar documentos físicos impresos con información de remisiones, guías, bases de datos de destinatarios, cotizaciones comerciales o estados financieros sobre los escritorios, impresoras comunes o salas de juntas al finalizar la jornada laboral. Todo documento sensible debe ser archivado en cajones bajo llave o destruido mediante trituradora de papel si ya no es útil.",
+                "5. GESTIÓN OPERATIVA DE REDES Y TRANSFERENCIA DE DATOS": "• Segmentación: La red corporativa (LAN/Wi-Fi) de SERGEM se encuentra segmentada en VLANs independientes bajo inspección de Firewall perimetral. Las terminales para visitantes e invitados operan exclusivamente en una red asilada (Guest-VLAN) sin permisos de enrutamiento ni visibilidad hacia los servidores centrales de bases de datos.\n• Transferencia: El envío de archivos con bases de datos de clientes hacia proveedores externos debe realizarse obligatoriamente utilizando métodos cifrados (ZIP con contraseña o plataformas SFTP corporativas) aprobadas por la Dirección de TI, prohibiendo el uso de plataformas de transferencia pública gratuitas (como WeTransfer no corporativo o correos personales de Gmail/Hotmail)."
             }
         }
         
+    # 3. HOJA DE VIDA EQUIPOS
     elif "hoja de vida" in req:
         return {
             "codigo": "RG-08-015",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DEL CONTROL": "Estandarizar el registro sistemático del ciclo de vida, características técnicas, asignaciones, mantenimientos correctivos y preventivos del parque informático y hardware de la compañía, dando cumplimiento al control A.8.1 (Inventario de activos) de la ISO/IEC 27001.",
-                "2. ALCANCE Y APLICABILIDAD": "Aplica de forma obligatoria a servidores físicos y virtuales, estaciones de trabajo de escritorio, computadores portátiles, impresoras matriciales/térmicas y equipos de comunicación asignados al personal administrativo y operativo en todas las sedes.",
-                "3. DIRECTRICES DE GESTIÓN Y MANTENIMIENTO": "• Cada activo tecnológico posee una 'Hoja de Vida' digital vinculada al inventario maestro consolidado en Excel.\n• Toda intervención técnica, cambio de componente hardware (memorias RAM, discos de estado sólido NVMe) o traslado físico de sede debe quedar registrado con fecha exacta, descripción detallada y cédula del técnico responsable.",
-                "4. PROTOCOLO DE BAJA Y RETIRO DE ACTIVOS": "Antes de proceder a la baja física o desecho de un equipo de cómputo, el área de TI ejecutará un borrado seguro de almacenamiento secundario (Wipe certificado mediante software especializado) para evitar la recuperación residual de datos corporativos o información de clientes."
+                "1. OBJETIVO DEL CONTROL DE ACTIVOS": "Estandarizar el registro formal, trazabilidad y mantenimiento sistemático del ciclo de vida, características técnicas, asignaciones de usuario y soportes de hardware de todo el parque informático de la compañía. Este registro obedece directamente al control A.5.9 (Inventario de activos de información) y A.8.1 (Dispositivos de usuario final) de la norma ISO/IEC 27001:2022.",
+                "2. ALCANCE ORGANIZACIONAL": "Este procedimiento de registro aplica obligatoriamente a servidores físicos (on-premise) y virtuales, estaciones de trabajo tipo torre y All-In-One, computadores portátiles de uso en campo, impresoras matriciales, térmicas y láser, equipos de telecomunicaciones (Switches/Routers) y dispositivos de mano asignados al personal administrativo y operativo en todas las sucursales de SERGEM.",
+                "3. DIRECTRICES DE GESTIÓN, INVENTARIO Y MANTENIMIENTO": "• Identificación: Todo equipo de cómputo debe poseer una placa o sticker inviolable con un serial consecutivo corporativo (Ej. SRG-001) pegado en el chasis, el cual estará vinculado directamente al Inventario Maestro consolidado en formato Excel (repositorio auditado de TI).\n• Hoja de Vida: Cada activo tecnológico cuenta con un registro digital ('Hoja de Vida') que detalla: tipo de equipo, marca, procesador, memoria RAM, almacenamiento, versión del sistema operativo (ej. Windows 11 Pro), dirección MAC, centro de costo asignado, ubicación física (ej. Sede Cali) y estado actual de garantía.\n• Actualizaciones de Hardware: Toda intervención técnica, apertura de chasis, formateo, o cambio de componente (como ampliaciones de memoria RAM o instalación de discos duros de estado sólido NVMe) debe quedar plasmada en la bitácora de la hoja de vida con fecha exacta, descripción detallada del cambio y el nombre del analista de TI responsable.\n• Asignación: Ningún empleado puede realizar intercambios físicos de computadores, monitores o periféricos con otro compañero sin la respectiva orden de soporte de TI.",
+                "4. PROTOCOLO DE BAJA, RETIRO Y DESECHO ECOLÓGICO": "Cuando un equipo cumple su ciclo de vida útil (obsolescencia tecnológica) o presenta un daño irreparable, antes de proceder a la baja física, donación o chatarrización, el Departamento de TI tiene la obligación crítica de ejecutar un proceso de 'Borrado Seguro' (Wipe certificado con estándares DoD 5220.22-M o herramientas especializadas). \n\nEste proceso de destrucción lógica destruye irreversiblemente cualquier dato almacenado en los discos duros, evitando la fuga y recuperación forense de datos residuales corporativos, credenciales en caché o bases de datos de clientes, salvaguardando así la reputación de SERGEM y el cumplimiento de la normatividad de Habeas Data."
             }
         }
         
+    # 4. LICENCIAMIENTO DE SOFTWARE
     elif "licenciamiento" in req or "soporte de adquisición" in req:
         return {
             "codigo": "PO-05-032",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO NORMATIVO": "Asegurar el cumplimiento estricto de los derechos de propiedad intelectual, contratos de usuario final (EULA) y prevenir la instalación de software no autorizado (Control A.5.32 de la ISO/IEC 27001 y legislación sobre derechos de autor en Colombia).",
-                "2. POLÍTICA DE ADQUISICIÓN Y CONTROL": "• Ningún software comercial, libre, de código abierto (Open Source) o de prueba puede ser instalado en los equipos de SERGEM sin previa validación, revisión de vulnerabilidades y aprobación escrita del Departamento de Tecnología.\n• Todos los soportes de compra, facturas electrónicas y certificados de licencias operativas se encuentran custodiados digitalmente en el repositorio central de proveedores.",
-                "3. AUDITORÍAS TRIMESTRALES DE SOFTWARE (SHADOW IT)": "El departamento de TI ejecutará de manera automatizada escaneos semestrales en las estaciones de trabajo para detectar instalaciones clandestinas o aplicaciones no autorizadas (Shadow IT), procediendo a su aislamiento y desinstalación inmediata con reporte a la Dirección Administrativa."
+                "1. OBJETIVO NORMATIVO": "Asegurar el cumplimiento estricto de los derechos de propiedad intelectual, contratos de usuario final (EULA) y prevenir la instalación de software malicioso, pirata o no autorizado. Este documento atiende al Control A.5.32 (Derechos de propiedad intelectual) de la ISO/IEC 27001 y la legislación nacional sobre derechos de autor.",
+                "2. ALCANCE Y APLICABILIDAD": "Aplica para absolutamente todos los equipos de cómputo, servidores, y dispositivos móviles propiedad de SERGEM S.A.S. a nivel nacional. Involucra a todos los usuarios, pero hace responsable directo de la supervisión al Departamento de Tecnología.",
+                "3. POLÍTICA DE ADQUISICIÓN Y CONTROL DE SOFTWARE": "• Ningún software comercial, libre, de código abierto (Open Source) o de prueba (Shareware/Trial) puede ser descargado, instalado o ejecutado en los equipos de SERGEM sin previa validación de riesgos de seguridad, revisión de vulnerabilidades y aprobación escrita por parte de la jefatura de TI.\n• Los usuarios estándar no poseen ni poseerán privilegios de Administrador Local en sus máquinas para impedir instalaciones arbitrarias.\n• Todos los soportes de compra, contratos de licenciamiento por volumen (Microsoft, Antivirus EDR, Freeway), facturas electrónicas y certificados operativos se encuentran custodiados digitalmente y centralizados en la carpeta del SGSI administrada por la Dirección Administrativa y de Compras.",
+                "4. AUDITORÍAS TRIMESTRALES DE SOFTWARE (SHADOW IT)": "El departamento de TI ejecutará de manera automatizada escaneos semestrales en las estaciones de trabajo mediante herramientas de inventariado de red. El objetivo es detectar instalaciones clandestinas o aplicaciones no autorizadas (Shadow IT) que evadan el control. Cualquier hallazgo procederá a su aislamiento de red, desinstalación inmediata y el reporte disciplinario del colaborador implicado.",
+                "5. PROHIBICIÓN DE EVASIÓN": "El uso de parches, cracks, keygens o software diseñado para vulnerar o extender ilegalmente licenciamientos comerciales está totalmente prohibido y es causal de terminación de contrato y reporte a autoridades legales."
             }
         }
         
+    # 5. COPIAS DE SEGURIDAD
     elif "copia" in req and "seguridad" in req:
         return {
             "codigo": "PR-08-013",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y PROPÓSITO": "Definir los lineamientos técnicos y operativos para la creación, custodia, retención y protección de las copias de respaldo (backups) de la información institucional, mitigando riesgos de pérdida por fallas de hardware, ataques de ransomware o desastres físicos (Control A.8.13).",
-                "2. FRECUENCIA Y CRONOGRAMA DE RESPALDO": "• Backups Incrementales: Ejecución automatizada diaria a las 02:00 AM sobre bases de datos operativas y ERP.\n• Backups Completos (Full): Ejecución automatizada semanal todos los domingos en horario no hábil.\n• Almacenamiento: Las copias son transferidas de forma encriptada hacia los servidores en la nube del proveedor certificado SOLINUX.",
-                "3. POLÍTICA DE RETENCIÓN Y DISPONIBILIDAD": "Los respaldos diarios se retienen por un periodo mínimo de 30 días en entornos inmutables. Los respaldos mensuales se conservan por un ciclo de un (1) año para asegurar trazabilidad histórica y auditoría fiscal."
+                "1. OBJETIVO Y PROPÓSITO": "Definir los lineamientos técnicos, operativos y estratégicos para la creación, custodia, retención, cifrado y restauración de las copias de respaldo (backups) de la información institucional crítica. Su propósito es mitigar contundentemente los riesgos de pérdida de datos ocasionados por fallas de hardware, ciberataques (Ransomware), corrupción de bases de datos o desastres físicos, dando estricto cumplimiento al Control A.8.13 (Copias de seguridad) de la ISO 27001:2022.",
+                "2. ALCANCE DEL RESPALDO": "Este procedimiento abarca las bases de datos transaccionales del ERP logístico (Freeway), los servidores de archivos compartidos de los departamentos financieros y administrativos, las configuraciones perimetrales (Firewalls) y los repositorios documentales ubicados en el Data Center físico de Cali y la infraestructura Cloud.",
+                "3. FRECUENCIA, METODOLOGÍA Y CRONOGRAMA DE RESPALDO": "SERGEM adopta la metodología de seguridad 3-2-1 (Tres copias, dos medios diferentes, uno fuera de sitio).\n• Backups Incrementales y Diferenciales: Ejecución automatizada diaria a las 02:00 AM sobre las bases de datos operativas de despacho y facturación, con el fin de no saturar la red en horario productivo.\n• Backups Completos (Full): Ejecución automatizada semanal todos los domingos en horario no hábil.\n• Medio de Almacenamiento y Tránsito: Las copias son extraídas, cifradas bajo el estándar AES-256 bits y transferidas por túneles seguros hacia los repositorios inmutables en la nube provistos por nuestro proveedor tecnológico certificado (SOLINUX).",
+                "4. POLÍTICA DE RETENCIÓN (RETENTION POLICY)": "Los respaldos transaccionales diarios se retienen por un periodo mínimo de 30 días continuos. Los respaldos completos de cierre de mes se conservan por un ciclo histórico de un (1) año calendario completo para asegurar trazabilidad pericial, contingencia fiscal y auditoría externa.",
+                "5. PRUEBAS DE RESTAURACIÓN BIANUALES": "El departamento de TI, en conjunto con el proveedor SOLINUX, tiene la obligación de realizar pruebas de restauración 'en frío' (simulacros de recuperación en entornos de pruebas aislados) al menos dos veces al año. Estas pruebas deben generar un acta firmada que certifique que los archivos de respaldo no están corruptos y que cumplen con los tiempos de recuperación objetivo (RTO y RPO)."
             }
         }
         
+    # 6. MATRIZ DE RIESGOS
     elif "matriz de riesgos" in req:
         return {
             "codigo": "MT-06-001",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. MARCO METODOLÓGICO": "La presente matriz ha sido estructurada bajo los lineamientos metodológicos de la norma internacional ISO/IEC 27005, orientada a la apreciación, análisis, evaluación y tratamiento sistemático de los riesgos de seguridad de la información en SERGEM.",
-                "2. FÓRMULA DE VALORACIÓN DEL RIESGO": "El nivel de riesgo se determina mediante la ponderación matemática: Riesgo = Probabilidad (P) x Impacto (I), evaluando las dimensiones de Confidencialidad, Integridad y Disponibilidad.",
-                "3. PRINCIPALES RIESGOS IDENTIFICADOS Y TRATAMIENTO": "• Riesgo de Malware / Ransomware en Servidores Core: Nivel Alto. Tratamiento: Mitigado mediante la instalación de antivirus EDR centralizado, copias inmutables en la nube y capacitación anti-phishing al personal.\n• Riesgo de Fuga o Exfiltración de Datos Personales: Nivel Medio. Tratamiento: Mitigado mediante restricciones de puertos USB en equipos operativos, cifrado de información y firma obligatoria de acuerdos de confidencialidad (NDA)."
+                "1. MARCO METODOLÓGICO Y OBJETIVO": "La presente metodología ha sido estructurada y tropicalizada bajo los lineamientos de la norma internacional ISO/IEC 27005 y los requisitos de la cláusula 6.1.2 de la ISO/IEC 27001:2022. Está orientada a la identificación, apreciación, análisis, evaluación y tratamiento sistemático de los riesgos que amenazan la seguridad de la información en todos los procesos misionales de SERGEM Mensajería S.A.S.",
+                "2. ALCANCE DE LA VALORACIÓN": "El ejercicio de gestión de riesgos abarca todos los activos críticos (Servidores, bases de datos de clientes, plataforma Freeway, instalaciones físicas, y personal) en las sucursales de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
+                "3. FÓRMULA DE VALORACIÓN DEL RIESGO": "El nivel de riesgo inherente y residual se determina mediante la ponderación matemática de dos variables fundamentales: Riesgo = Probabilidad de Ocurrencia (P) x Nivel de Impacto (I).\n\n• El Impacto se evalúa considerando la gravedad de la pérdida en tres dimensiones: Confidencialidad (filtración de datos), Integridad (alteración de guías logísticas) y Disponibilidad (caída del sistema).\n• Se utiliza una matriz de calor (Heatmap) de 5x5 para categorizar los riesgos en Niveles: Bajo, Medio, Alto y Crítico.",
+                "4. TRATAMIENTO Y RESPUESTA AL RIESGO": "Para cada riesgo identificado que supere el umbral de aceptación gerencial (Nivel Alto y Crítico), se debe seleccionar una de las cuatro opciones de tratamiento:\n• Mitigar: Aplicar controles técnicos (Firewalls, Antivirus, Políticas) para reducir la probabilidad o impacto.\n• Transferir: Trasladar el impacto financiero mediante pólizas de ciberseguridad o contratos de outsourcing.\n• Evitar: Cesar la actividad que genera el riesgo (Ej: dar de baja un servidor obsoleto).\n• Aceptar: Solo bajo la firma explícita del Gerente General ante riesgos residuales de nivel Bajo.",
+                "5. PRINCIPALES RIESGOS IDENTIFICADOS Y CONTROLES VIGENTES": "• Riesgo 01 (Crítico): Infección masiva por Ransomware en Servidores Core. Tratamiento: Instalación de EDR centralizado, segmentación de red y copias inmutables en la nube (SOLINUX).\n• Riesgo 02 (Alto): Fuga o Exfiltración de Datos Personales (Violación Habeas Data). Tratamiento: Restricciones de puertos USB por GPO, cifrado de información, NDAs firmados por empleados.\n• Riesgo 03 (Alto): Caída del sistema eléctrico que afecte la plataforma Freeway. Tratamiento: UPS redundantes y plan de continuidad del negocio (BCP)."
             }
         }
         
+    # 7. CONTRATOS Y GESTIÓN DE SEGURIDAD CON PROVEEDORES
     elif "contratos" in req and ("gestión" in req or "seguridad" in req):
         return {
             "codigo": "PO-05-019",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO CONTRACTUAL": "Asegurar que los riesgos asociados al acceso de proveedores externos, contratistas y prestadores de servicios tecnológicos a los activos de información de SERGEM sean mitigados eficazmente, cumpliendo con los controles A.5.19 y A.5.20 de la ISO/IEC 27001.",
-                "2. CLÁUSULAS DE SALVAGUARDA OBLIGATORIAS": "• Todo contrato con un tercero debe incluir inexorablemente un Anexo de Seguridad de la Información y un Acuerdo de Confidencialidad (NDA) debidamente firmado por el Representante Legal.\n• Los proveedores tecnológicos deben garantizar el cumplimiento de estándares equivalentes de ciberseguridad y protección de datos conforme a la Ley 1581 de 2012.",
-                "3. DERECHO DE INSPECCIÓN Y AUDITORÍA": "SERGEM se reserva de manera explícita el derecho de auditar los controles técnicos, instalaciones y políticas internas de los proveedores críticos para verificar el cumplimiento de los Acuerdos de Nivel de Servicio (SLA) pactados."
+                "1. OBJETIVO CONTRACTUAL Y NORMATIVO": "Asegurar, mediante la gestión jurídica y técnica, que los riesgos asociados al acceso de proveedores externos, contratistas, consultores y prestadores de servicios tecnológicos a los activos de información de SERGEM S.A.S. sean mitigados eficazmente. Da cumplimiento expreso a los controles A.5.19, A.5.20 y A.5.21 de la ISO/IEC 27001 sobre seguridad en la cadena de suministro.",
+                "2. ALCANCE Y ÁMBITO DE APLICACIÓN": "Aplica para absolutamente todos los procesos de compras, contratación y licitaciones donde un tercero vaya a interactuar, alojar, transportar, visualizar o soportar infraestructura tecnológica, software o bases de datos con información propiedad de SERGEM y sus clientes.",
+                "3. CLÁUSULAS DE SALVAGUARDA OBLIGATORIAS EN CONTRATOS": "• Acuerdos de Confidencialidad (NDA): Todo contrato con un tercero debe incluir como anexo inexcusable un NDA debidamente firmado por el Representante Legal del proveedor antes de otorgar la primera credencial de acceso.\n• Cumplimiento Legal (Ley 1581): Los proveedores tecnológicos que procesen datos de SERGEM deben garantizar contractualmente el cumplimiento de estándares equivalentes de ciberseguridad y protección de datos personales conforme a la ley colombiana.\n• Notificación de Incidentes: El contrato debe estipular que el proveedor está obligado a notificar a SERGEM S.A.S. cualquier brecha de seguridad que afecte nuestros datos en un plazo no mayor a 24 horas tras su detección.",
+                "4. DERECHO DE INSPECCIÓN Y AUDITORÍA": "SERGEM Mensajería S.A.S. se reserva de manera explícita y contractual el 'Derecho de Auditoría' sobre sus proveedores críticos (Tier 1). Esto implica la potestad de auditar los controles técnicos, instalaciones físicas y políticas internas del proveedor para verificar el cumplimiento real de los Acuerdos de Nivel de Servicio (SLA) pactados en materia de seguridad.",
+                "5. TERMINACIÓN Y DEVOLUCIÓN DE ACTIVOS": "El contrato debe dictar que, una vez finalizada la relación comercial o expirado el tiempo de servicio, el proveedor tiene un plazo máximo de 5 días hábiles para certificar la devolución física de equipos y el borrado seguro e irreversible de toda la información de SERGEM alojada en sus infraestructuras."
             }
         }
 
+    # 8. PLAN DE ACCIÓN, PREVENTIVO Y CORRECTIVO
     elif "plan de acción" in req or "preventivo y correctivo" in req:
         return {
             "codigo": "PR-10-001",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DE MEJORA CONTINUA": "Garantizar la mejora continua del Sistema de Gestión de Seguridad de la Información (SGSI) mediante la gestión estructurada, análisis de causa raíz y tratamiento oportuno de las no conformidades, hallazgos de auditoría e incidentes detectados (Cláusulas 10.1 y 10.2 de la ISO/IEC 27001).",
-                "2. CICLO METODOLÓGICO DE ACCIÓN": "1. Identificación y registro formal del hallazgo o desvío.\n2. Análisis de causa raíz empleando metodologías de ingeniería (Diagrama de Ishikawa o los 5 Porqués).\n3. Definición, asignación y ejecución de la acción correctiva o preventiva con responsables y plazos definidos.\n4. Verificación posterior de la eficacia de la solución implementada por parte de la Dirección Administrativa."
+                "1. OBJETIVO DE MEJORA CONTINUA": "Garantizar la mejora constante, trazable y sostenida del Sistema de Gestión de Seguridad de la Información (SGSI) de SERGEM Mensajería S.A.S. mediante la gestión estructurada, análisis de causa raíz y tratamiento oportuno de las no conformidades, los hallazgos derivados de auditorías externas (Kreston), auditorías internas y la materialización de incidentes detectados. Cumple con los requisitos del Capítulo 10 (10.1 y 10.2) de la norma ISO/IEC 27001:2022.",
+                "2. ALCANCE Y ÁMBITO DE APLICACIÓN": "Este plan abarca absolutamente todas las áreas operativas, administrativas y sedes de la compañía que formen parte del SGSI. Involucra a los líderes de proceso que deben dar respuesta técnica a los hallazgos (oportunidades de mejora, no conformidades menores y no conformidades mayores) en los tiempos reglamentarios estipulados por la Dirección Administrativa.",
+                "3. CICLO METODOLÓGICO Y MATRIZ DE ACCIÓN": "El tratamiento de toda no conformidad se gestionará bajo un ciclo metodológico riguroso documentado en la 'Matriz de Observaciones y Novedades':\n\n1. Identificación y Registro: Documentación formal del hallazgo o desvío, indicando el requisito normativo incumplido o el componente vulnerable detectado.\n2. Análisis de Causa Raíz (RCA): Investigación técnica empleando metodologías de ingeniería industrial y de sistemas (tales como el Diagrama de Ishikawa - Causa y Efecto, o los 5 Porqués) para encontrar el origen sistémico del fallo y no solo el síntoma superficial.\n3. Definición y Asignación de Actividad de Subsanación: Diseño de la acción correctiva (para eliminar la causa de una no conformidad existente) o la acción preventiva (para mitigar un riesgo potencial). Se define claramente el cargo responsable, la fecha límite de ejecución (Deadline) y el presupuesto necesario si aplica.\n4. Ejecución y Evidencia: El responsable materializa el cambio técnico u organizacional y levanta actas, fotos, logs de sistema o capturas de pantalla que sustenten el trabajo realizado.\n5. Cierre y Verificación de Eficacia: La Dirección Administrativa o el líder de auditoría interna revisará la evidencia aportada, evaluará si la vulnerabilidad desapareció y otorgará el estado de 'SUBSANADA' en la matriz oficial.",
+                "4. TIEMPOS DE RESPUESTA (SLAs DE CORRECCIÓN)": "Para garantizar la seguridad de la compañía, se establecen los siguientes tiempos máximos de subsanación tras el levantamiento del hallazgo:\n• No Conformidad Crítica (Riesgo Alto a la información): Corrección inmediata o plan de contención máximo en 48 horas.\n• No Conformidad Mayor: Cierre definitivo en un plazo máximo de treinta (30) días calendario.\n• No Conformidad Menor / Oportunidad de Mejora: Cierre planificado no mayor a noventa (90) días calendario, sujeto al cronograma de proyectos de TI."
             }
         }
 
+    # 9. CONTROL DE ACCESO
     elif "control de acceso" in req:
         return {
             "codigo": "PO-07-003",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y PROPÓSITO": "Limitar el acceso autorizado a los sistemas de información, redes de comunicación, bases de datos corporativas y sedes físicas de SERGEM Mensajería S.A.S., previniendo accesos no autorizados y protegiendo los activos críticos (Controles A.9.1 al A.9.4 de la ISO/IEC 27001).",
-                "2. POLÍTICA DE CONTROL DE ACCESO LÓGICO": "• El acceso a los sistemas operativos y ERP se basa estrictamente en el principio de 'Privilegio Mínimo' (otorgando únicamente los permisos indispensables para cumplir con las funciones del cargo).\n• Las cuentas de usuario de colaboradores retirados deben ser desactivadas de forma definitiva en un plazo no mayor a 24 horas tras la notificación oficial de Gestión Humana.",
-                "3. CONTROL DE ACCESO FÍSICO A INSTALACIONES": "• Las áreas de servidores (Data Center) y archivo central cuentan con control de acceso restringido mediante huella biométrica y/o llaves magnéticas.\n• El ingreso de visitantes a las instalaciones debe registrarse obligatoriamente en la portería, exigiendo presentación de documento de identidad, entrega de distintivo visible y supervisión permanente por un colaborador anfitrión."
+                "1. OBJETIVO DEL CONTROL Y SEGURIDAD PERIMETRAL": "Establecer las barreras lógicas y físicas necesarias para limitar, autorizar y auditar el acceso a los sistemas de información, redes corporativas, bases de datos logísticas (Freeway) y sedes físicas de SERGEM Mensajería S.A.S. El propósito central es prevenir intrusiones no autorizadas, fugas de datos y sabotajes operativos, dando cumplimiento exhaustivo a los controles A.5.15 (Control de acceso) y A.7.1 (Áreas seguras físicas) de la norma ISO/IEC 27001:2022.",
+                "2. POLÍTICA DE CONTROL DE ACCESO LÓGICO (SISTEMAS)": "• Principio de Privilegio Mínimo: La concesión de permisos de lectura, escritura o eliminación en los sistemas de información corporativos (ERP, bases de datos compartidas, CRM logístico) se basa estrictamente en la premisa técnica de otorgar única y exclusivamente los permisos indispensables que requiere el empleado para cumplir las funciones explícitas de su cargo contractual.\n• Aprobación Formal: Toda creación de una nueva cuenta de usuario, buzón de correo o asignación de perfil en Freeway debe contar con un ticket aprobado en la mesa de ayuda (HelpDesk) respaldado por la solicitud del jefe inmediato y la validación de Gestión Humana.\n• Revocación de Privilegios: Cuando un colaborador es ascendido, trasladado de área o cambia de funciones operativas, sus antiguos permisos lógicos deben ser purgados o revocados y sustituidos por la matriz de accesos de su nuevo rol, impidiendo la acumulación tóxica de privilegios.\n• Control de Administradores: Las credenciales de Administrador de Dominio (Root / SysAdmin) son de uso exclusivo para mantenimiento técnico. Los ingenieros de TI deberán utilizar cuentas sin privilegios para su navegación y trabajo de oficina cotidiano.",
+                "3. CONTROL DE ACCESO FÍSICO A INSTALACIONES Y DATA CENTER": "• Protección de Áreas Críticas: Las áreas que alojan infraestructura tecnológica neurálgica, como el Data Center, cuartos de cableado estructurado (MDF/IDF) y los archivos centrales documentales, son catalogadas como 'Zonas Restringidas'. El acceso a ellas está controlado exclusivamente mediante controles de huella biométrica y/o tarjetas magnéticas RFID auditable. Se prohíbe el ingreso con bolsos, líquidos o alimentos a estas zonas.\n• Gestión de Visitantes y Terceros: Todo ingreso de personal externo (auditores, mensajeros, personal de mantenimiento, familiares) a las instalaciones administrativas de SERGEM en Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué debe registrarse invariablemente en las minutas de la portería o recepción. \n• El registro exige: validación con documento de identidad oficial, toma de fotografía (si aplica el sistema), entrega de un carné de visitante visible (Lanyard) y, lo más importante, el visitante debe estar escoltado y bajo supervisión constante de un empleado anfitrión de SERGEM durante toda su estadía en las zonas internas de la compañía."
             }
         }
 
+    # 10. PROCEDIMIENTO DISCIPLINARIO
     elif "disciplinario" in req:
         return {
             "codigo": "PR-03-002",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO Y MARCO LEGAL": "Establecer de manera clara y transparente los lineamientos, tipificación de faltas y el debido proceso sancionatorio aplicable ante el incumplimiento de las políticas y procedimientos del Sistema de Gestión de Seguridad de la Información (SGSI) en SERGEM Mensajería S.A.S.",
-                "2. TIPIFICACIÓN DE FALTAS CONTRA LA SEGURIDAD": "• Falta Leve: Desatención menor a recomendaciones de seguridad que no compromete datos críticos.\n• Falta Grave: Uso indebido de credenciales, omisión de bloqueo de estaciones de trabajo, revelación negligente de información operativa o manipulación no autorizada de equipos tecnológicos.",
-                "3. PROCEDIMIENTO DE DESCARGOS Y SANCIONES": "1. Reporte formal del incidente por parte de TI o jefatura inmediata a Gestión Humana.\n2. Citación a descargos por escrito al colaborador implicado con respeto irrestricto al debido proceso.\n3. Evaluación conjunta entre Gerencia y Dirección Administrativa para la aplicación de la sanción disciplinaria (amonestación escrita, suspensión temporal o terminación de contrato con justa causa conforme al Código Sustantivo del Trabajo)."
+                "1. OBJETIVO Y MARCO LEGAL LABORAL": "Establecer de manera clara, contundente y transparente los lineamientos, tipificación de faltas y el debido proceso sancionatorio aplicable ante el incumplimiento, omisión o vulneración de las políticas y procedimientos del Sistema de Gestión de Seguridad de la Información (SGSI) en SERGEM Mensajería S.A.S. Este documento se encuentra articulado con el Reglamento Interno de Trabajo, la norma ISO 27001 (Control A.6.4) y el Código Sustantivo del Trabajo de Colombia.",
+                "2. ALCANCE DISCIPLINARIO": "Aplica para el 100% de la plantilla de colaboradores vinculados mediante cualquier modalidad de contrato (término fijo, indefinido, obra labor) en todas las sedes nacionales, así como a personal externo que haya firmado cláusulas de confidencialidad y acuerdos de servicio.",
+                "3. TIPIFICACIÓN DE FALTAS CONTRA LA SEGURIDAD": "• Falta Leve: Desatención menor o accidental a recomendaciones de seguridad que no compromete datos críticos ni interrumpe la operación. (Ejemplo: Dejar la pantalla desbloqueada en zona de bajo tránsito o guardar archivos personales menores en la red).\n• Falta Grave: Uso indebido o préstamo de credenciales de usuario (contraseñas), omisión recurrente de bloqueo de estaciones, conexión de USBs no autorizadas, desactivación temporal de antivirus sin permiso, o instalación de software pirata.\n• Falta Gravísima (Causal de Despido): Filtración intencionada o por negligencia extrema de bases de datos de clientes, alteración fraudulenta de guías logísticas en el sistema Freeway, sabotaje a los sistemas de información, extorsión digital y/o cualquier violación material a la Ley 1581 de Habeas Data.",
+                "4. PROCEDIMIENTO DE DESCARGOS, INVESTIGACIÓN Y SANCIONES": "1. Reporte Formal: Informe escrito del incidente documentado por parte de TI, la jefatura inmediata o el oficial de seguridad hacia la Gerencia de Gestión Humana.\n2. Medida Cautelar: Suspensión inmediata de los accesos lógicos y VPN del empleado mientras transcurre la investigación si la amenaza es inminente.\n3. Citación a Descargos: Llamado formal por escrito al colaborador implicado, garantizando el respeto irrestricto al debido proceso y su derecho a la defensa y presentación de pruebas.\n4. Resolución y Sanción: Evaluación conjunta entre la Gerencia, Dirección Administrativa y Gestión Humana para la aplicación de la sanción disciplinaria proporcional, que va desde una amonestación escrita con copia a la hoja de vida, suspensiones de días sin goce de sueldo, hasta la terminación del contrato con justa causa y compulsa de copias a la Fiscalía por delitos informáticos (Ley 1273)."
             }
         }
     
+    # 11. ACTUALIZACIÓN DE RECURSOS
     elif "actualización" in req or "recursos" in req:
         return {
             "codigo": "PL-07-005",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO ESTRATÉGICO": "Planificar, presupuestar y ejecutar la renovación tecnológica, mantenimiento preventivo y actualización de hardware y software de la compañía para mitigar riesgos asociados a la obsolescencia técnica (Control A.8.19 de la ISO/IEC 27001).",
-                "2. CICLO DE VIDA DE LOS ACTIVOS": "• Los equipos de cómputo y servidores tienen un ciclo de vida útil estimado entre 4 y 5 años.\n• Las licencias de sistemas operativos, paquetes de oficina y antivirus corporativos se actualizan de manera permanente a sus últimas versiones estables con soporte activo de fábrica.",
-                "3. PROCEDIMIENTO DE EJECUCIÓN": "El área de TI realiza un inventario anual consolidado, detecta componentes próximos a obsolescencia y presenta ante la Gerencia el plan de inversiones tecnológicas para su respectiva aprobación y ejecución presupuestal."
+                "1. OBJETIVO ESTRATÉGICO": "Planificar, estructurar, presupuestar y ejecutar la renovación tecnológica, mantenimiento preventivo y actualización de componentes de hardware y plataformas de software de la compañía. El objetivo es mitigar contundentemente los riesgos asociados a la deuda técnica, obsolescencia de equipos, cuellos de botella en la operación logística y vulnerabilidades por sistemas sin soporte de fábrica (Control A.8.19 de la ISO/IEC 27001 y A.8.8 Gestión de vulnerabilidades).",
+                "2. ALCANCE Y DIAGNÓSTICO": "Abarca todo el parque tecnológico inventariado en SERGEM (Sedes operativas y administrativas): Computadores de escritorio, portátiles, servidores físicos, switches core, sistemas operativos de usuario (Windows/Linux) y software de aplicación corporativa.",
+                "3. CICLO DE VIDA Y RENOVACIÓN DE LOS ACTIVOS": "• Hardware: Se establece como métrica corporativa que los equipos de cómputo estándar y periféricos tienen un ciclo de vida útil estimado de cuatro (4) a cinco (5) años. Los servidores core y dispositivos de red se proyectan a un ciclo de entre cinco (5) y siete (7) años.\n• Software y Parches: Las licencias de sistemas operativos, paquetes de ofimática y soluciones antivirus (EDR) deben actualizarse obligatoriamente a sus últimas versiones estables con soporte activo de fábrica (End-of-Life avoidance). El sistema WSUS o MDM forzará la instalación de parches críticos de seguridad liberados por Microsoft/Linux en un plazo máximo de 15 días posteriores a su lanzamiento.",
+                "4. PROCEDIMIENTO DE EJECUCIÓN Y PRESUPUESTO": "El área de Tecnología (TI) tiene el deber de realizar un cruce de inventario anual durante el último trimestre del año. \n\nA través de este ejercicio, detectará qué equipos, componentes o licencias están próximos a su obsolescencia y estructurará el 'Plan de Inversiones y Actualización Tecnológica' (CAPEX/OPEX). Este plan deberá ser presentado ante la Dirección Administrativa y la Gerencia General para su respectiva aprobación y asignación presupuestal para el año fiscal venidero."
             }
         }
         
+    # 12. CAPACITACIONES
     elif "capacitaci" in req or "planilla" in req:
         return {
             "codigo": "PR-08-001",
             "tipo_firma": "FIRMA RESPONSABLE DE LA CAPACITACIÓN",
             "secciones": {
-                "1. OBJETIVO DEL PROGRAMA": "Garantizar que la totalidad del personal administrativo, operativo y directivo de SERGEM reciba formación y concienciación periódica en materia de seguridad de la información y protección de datos (Control A.6.3 de la ISO/IEC 27001).",
-                "2. AGENDA Y COBERTURA NACIONAL": "Se programan jornadas de capacitación dirigidas al personal a nivel nacional en las sedes de Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.\n\nTemas tratados: Uso seguro de contraseñas, reconocimiento de correos sospechosos (Phishing), política de escritorio limpio y normatividad de Habeas Data (Ley 1581).",
-                "3. COMPROMISOS Y CONSTANCIA": "La asistencia a estas jornadas es de carácter obligatorio. Cada asistente firma la planilla de asistencia digital o física como evidencia documental auditable para el cumplimiento del SGSI."
+                "1. OBJETIVO DEL PROGRAMA DE CONCIENCIACIÓN": "Garantizar de manera documentada que la totalidad del personal administrativo, operativo y directivo de SERGEM Mensajería S.A.S. reciba formación técnica, concienciación periódica y actualización legal en materia de seguridad de la información y protección de datos. Da estricto cumplimiento al Control A.6.3 (Concienciación, educación y capacitación) de la norma ISO/IEC 27001.",
+                "2. ALCANCE Y COBERTURA NACIONAL": "El programa de capacitación y sensibilización (Security Awareness) es de carácter transversal e involucra a todas las áreas de la compañía. Se despliega mediante sesiones presenciales y/o virtuales cubriendo a los trabajadores en Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
+                "3. AGENDA Y TEMARIO OBLIGATORIO": "El plan anual de capacitación debe incluir, de manera obligatoria pero no limitativa, los siguientes pilares de seguridad:\n• Gestión y uso seguro de contraseñas corporativas (Prohibición de post-its y compartición).\n• Identificación y prevención de Ingeniería Social (Phishing, Vishing, Smishing).\n• Política de escritorio y pantalla limpia en puestos operativos.\n• Manejo adecuado y normatividad legal sobre la protección de datos de clientes (Habeas Data - Ley 1581).\n• Protocolos de reporte de incidentes a la mesa de ayuda (HelpDesk).",
+                "4. INDUCCIÓN A NUEVOS EMPLEADOS (ONBOARDING)": "Todo colaborador recién contratado debe recibir la inducción de seguridad de la información dentro de su primera semana laboral, antes de otorgársele el acceso pleno al sistema Freeway. En caso contrario, los accesos permanecerán restringidos.",
+                "5. COMPROMISOS, EVALUACIÓN Y CONSTANCIA (PLANILLAS)": "La asistencia y participación en estas jornadas es de carácter estrictamente obligatorio y se encuentra dentro de las funciones laborales. Cada asistente debe firmar de puño y letra (o mediante firma digital validada) la 'Planilla de Asistencia a Capacitación', la cual reposará en los archivos de Gestión Humana como evidencia documental auditable para sustentar la conformidad del SGSI frente a Kreston o cualquier ente auditor."
             }
         }
 
+    # 13. PLAN DE EMERGENCIAS Y PÉRDIDA DE INFORMACIÓN
     elif "emergencia" in req or "pérdida" in req:
         return {
             "codigo": "PR-07-015",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DE CONTINGENCIA": "Establecer un plan de acción inmediato y estructurado para mitigar, responder y recuperar la operatividad de la infraestructura y la información ante incidentes críticos, ciberataques, fallas de servidores o desastres físicos (Control A.5.29 y A.8.14).",
-                "2. MÉTRICAS DE RECUPERACIÓN (RTO Y RPO)": "• RTO (Recovery Time Objective): Tiempo máximo tolerable de interrupción del sistema core fijado en 4 horas.\n• RPO (Recovery Point Objective): Punto máximo tolerable de pérdida de datos fijado en un ciclo de 24 horas.",
-                "3. PROTOCOLO DE RESPUESTA A CRISIS": "1. Aislamiento inmediato de los equipos o segmentos de red afectados para frenar propagación de amenazas.\n2. Notificación urgente al Comité de Crisis y a la Gerencia General.\n3. Activación del protocolo de restauración de respaldos en la nube junto al proveedor tecnológico SOLINUX."
+                "1. OBJETIVO DEL PLAN DE CONTINGENCIA (DRP)": "Establecer, documentar y probar un plan de acción inmediato y estructurado (Disaster Recovery Plan) para mitigar, contener, responder y recuperar la operatividad de la infraestructura tecnológica y las bases de datos logísticas ante incidentes críticos. Estos incidentes abarcan ciberataques (Ransomware/DDoS), fallas de hardware catastróficas, incendios en el Data Center físico, o desastres naturales. Cumple con los controles A.5.29 y A.8.14 de ISO/IEC 27001.",
+                "2. ALCANCE Y ESCENARIOS CONTEMPLADOS": "El plan está diseñado para asegurar la supervivencia y el reinicio de los procesos críticos (recepción de despachos, asignación de rutas y facturación) en el sistema Freeway, abarcando todas las sedes a nivel nacional.",
+                "3. MÉTRICAS DE RECUPERACIÓN EXIGIDAS (RTO Y RPO)": "La Gerencia ha establecido los siguientes límites de tolerancia ante desastres:\n• RTO (Recovery Time Objective): El tiempo máximo tolerable en el que el sistema core (Freeway) y las comunicaciones pueden estar interrumpidos antes de causar un daño comercial inaceptable a SERGEM, fijado en un máximo de cuatro (4) horas.\n• RPO (Recovery Point Objective): El volumen máximo tolerable de pérdida de información transaccional, fijado en un ciclo de veinticuatro (24) horas (alineado a los backups diarios).",
+                "4. COMITÉ DE CRISIS Y ROLES": "Ante la declaratoria de desastre, se conforma de forma inmediata el 'Comité de Crisis', liderado por el Gerente General, la Dirección Administrativa y el Jefe de TI. Este comité será el único autorizado para tomar decisiones financieras de emergencia y emitir comunicados oficiales a clientes y proveedores afectados.",
+                "5. PROTOCOLO DE RESPUESTA A CRISIS EN 4 PASOS": "1. Identificación y Declaratoria: El equipo de TI confirma el desastre (ej. pérdida de base de datos o cifrado por malware) y el Comité declara el estado de contingencia.\n2. Contención y Aislamiento: Si es un ciberataque, se desconectan físicamente los servidores afectados de la red LAN/WAN y de internet de forma inmediata para frenar la propagación lateral del virus.\n3. Recuperación Alterna (Failover): Se activa el protocolo de restauración de respaldos inmutables en la nube junto a los ingenieros del proveedor tecnológico SOLINUX, levantando servidores secundarios o virtuales.\n4. Retorno a la Normalidad (Failback) y Análisis: Una vez estabilizado el servicio con los backups, se realiza un análisis forense de la causa, se parchea la vulnerabilidad y se levanta el estado de emergencia oficial."
             }
         }
         
+    # 14. POLÍTICA DE CONTRASEÑAS
     elif "contraseña" in req or "clave" in req:
         return {
             "codigo": "PO-07-004",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO TÉCNICO": "Definir los lineamientos estrictos para la creación, longitud, complejidad, protección y rotación periódica de las credenciales de acceso a los sistemas de información de SERGEM (Control A.9.4.3 de la ISO/IEC 27001).",
-                "2. ESTÁNDARES TÉCNICOS DE CONTRASEÑAS": "• Longitud mínima de ocho (8) caracteres combinando obligatoriamente letras mayúsculas, minúsculas, números y símbolos especiales.\n• Rotación obligatoria cada noventa (90) días calendario impidiendo la reutilización de las últimas cuatro contraseñas anteriores.",
-                "3. PROHIBICIONES Y BUENAS PRÁCTICAS": "Queda terminantemente prohibido compartir contraseñas con compañeros, escribirlas en notas adhesivas (post-its) visibles en los monitores o utilizar datos personales fácilmente adivinables (fechas de nacimiento, nombres de mascotas o familiares)."
+                "1. OBJETIVO TÉCNICO Y NORMATIVO": "Definir, parametrizar y hacer cumplir los lineamientos técnicos estrictos para la creación, longitud, complejidad, custodia y rotación periódica de las credenciales (passwords) de acceso a los sistemas de información, redes Wi-Fi, ERP Freeway y correos corporativos de SERGEM Mensajería S.A.S. Este documento se acopla al Control A.9.4.3 (Gestión de contraseñas de usuario) de la norma ISO/IEC 27001.",
+                "2. ALCANCE DE LAS CREDENCIALES": "Esta política es de cumplimiento técnico mandatorio para absolutamente todas las cuentas de usuario (Directivos, Operarios, Administrativos, Proveedores con VPN y Administradores de Sistemas) creadas bajo el dominio informático de SERGEM.",
+                "3. ESTÁNDARES TÉCNICOS Y PARÁMETROS DE COMPLEJIDAD": "El departamento de Tecnología deberá configurar los directorios activos (Active Directory / IAM) para forzar los siguientes parámetros sin excepción:\n• Longitud Mínima: Las contraseñas deben contener como mínimo doce (12) caracteres de longitud.\n• Complejidad Obligatoria: Debe combinar, al menos, tres de los siguientes cuatro grupos de caracteres: Letras mayúsculas (A-Z), letras minúsculas (a-z), números (0-9) y símbolos especiales (!@#$%&*).\n• Rotación Temporal: Se aplicará una caducidad y rotación obligatoria de credenciales cada noventa (90) días calendario.\n• Historial y Bloqueo: El sistema impedirá la reutilización de las últimas cuatro (4) contraseñas anteriores. Asimismo, la cuenta se bloqueará automáticamente por 30 minutos tras superar tres (3) intentos fallidos consecutivos de ingreso (prevención de ataques de Fuerza Bruta).",
+                "4. PROHIBICIONES, CUSTODIA Y BUENAS PRÁCTICAS": "• Es una falta grave, sancionable disciplinariamente, escribir las contraseñas en notas adhesivas (post-its), libretas visibles en los escritorios, o guardarlas en archivos de texto sin cifrar en el escritorio del PC.\n• Queda terminantemente prohibido compartir, prestar o revelar la contraseña personal a compañeros, supervisores o incluso al personal de TI. El departamento de Tecnología NUNCA solicitará contraseñas por correo, chat o teléfono.\n• Se debe evitar el uso de patrones predecibles como fechas de nacimiento, nombres de familiares, mascotas, números de cédula, o nombres asociados a la empresa (Ej: Sergem2024*)."
             }
         }
         
+    # 15. DISPOSITIVOS MÓVILES (BYOD)
     elif "móvil" in req or "dispositivo" in req:
         return {
             "codigo": "PO-07-008",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DE SEGURIDAD MÓVIL": "Establecer las normas de control y seguridad para el uso de dispositivos móviles corporativos o personales (política BYOD) que procesen, almacenen o transmitan información de la compañía (Control A.8.1 de la ISO/IEC 27001).",
-                "2. DIRECTRICES DE CONFIGURACIÓN Y USO": "• Todo equipo móvil que maneje correo o datos corporativos debe contar con cifrado de almacenamiento activo, PIN de bloqueo obligatorio y solución de seguridad o antivirus actualizado.\n• Se prohíbe almacenar bases de datos de clientes en memorias USB o dispositivos personales no autorizados por TI.",
-                "3. PROTOCOLO EN CASO DE PÉRDIDA O ROBO": "El colaborador tiene la obligación de reportar de forma inmediata la pérdida o hurto de su dispositivo móvil al departamento de TI para proceder con el bloqueo de cuentas y la ejecución remota de borrado seguro (Wipe)."
+                "1. OBJETIVO DE SEGURIDAD MÓVIL Y BYOD": "Establecer las normas, restricciones y controles técnicos de seguridad para el uso de dispositivos móviles (Smartphones, Tablets y Laptops). Esto aplica tanto para equipos corporativos suministrados por SERGEM como para dispositivos personales (bajo esquema BYOD - Bring Your Own Device) que procesen, sincronicen correos, almacenen o transmitan información confidencial de la compañía. Acata el Control A.8.1 de la ISO/IEC 27001.",
+                "2. ALCANCE TECNOLÓGICO": "Abarca todos los dispositivos portátiles utilizados por la fuerza de ventas, conductores, gerentes y personal administrativo que requieren movilidad para ejecutar sus funciones desde fuera de la red local (Sedes, trabajo en casa o trabajo en calle).",
+                "3. DIRECTRICES DE CONFIGURACIÓN Y USO OBLIGATORIO": "• Bloqueo y Autenticación: Todo equipo móvil que maneje correo corporativo o acceda al ERP logístico debe contar de forma obligatoria con un método de bloqueo robusto (PIN complejo numérico, contraseña alfanumérica o biometría por huella/rostro).\n• Cifrado: Se debe activar el cifrado de almacenamiento del dispositivo (Cifrado de disco completo para Laptops o cifrado nativo en iOS/Android) para proteger los datos en reposo en caso de extravío.\n• Aplicaciones y Redes: Se prohíbe el 'Jailbreak' o 'Rooting' en los dispositivos que accedan a la red corporativa. No se deben conectar a redes Wi-Fi públicas y abiertas en aeropuertos o cafeterías sin el uso activo de la VPN de SERGEM.",
+                "4. GESTIÓN DE INCIDENTES (PÉRDIDA O ROBO) Y BORRADO REMOTO": "El colaborador asume la responsabilidad y obligación ineludible de reportar de forma inmediata (en un plazo no mayor a 2 horas) el hurto, extravío o pérdida de su dispositivo móvil corporativo o personal (si contiene datos de SERGEM) al departamento de TI. \n\nUna vez recibido el reporte, el equipo de Tecnología está facultado y obligado a proceder con el bloqueo preventivo de las cuentas de Office/Correo y ejecutar remotamente el borrado seguro de fábrica (Remote Wipe) mediante las herramientas de gestión de dispositivos móviles (MDM) para proteger la información confidencial antes de que caiga en manos de cibercriminales."
             }
         }
 
+    # 16. NOTIFICACIÓN DE INCIDENTES
     elif "notificación" in req or "incidente" in req:
         return {
             "codigo": "PR-07-011",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DE GESTIÓN": "Estandarizar el procedimiento operativo para la detección temprana, reporte formal, clasificación por criticidad y resolución de incidentes de seguridad de la información (Controles A.5.24 al A.5.28 de la ISO/IEC 27001).",
-                "2. CANALES Y PLAZOS DE REPORTE": "• Todo colaborador o tercero que detecte una anomalía, comportamiento extraño en el software, pérdida de equipos o sospecha de acceso no autorizado tiene el deber ético y laboral de reportarlo de inmediato a través de la Mesa de Ayuda.\n• Los incidentes clasificados como críticos deben ser escalados y notificados a la Dirección en un plazo inferior a una (1) hora.",
-                "3. REGISTRO Y LECCIONES APRENDIDAS": "Cada incidente resuelto debe documentarse en la bitácora de TI detallando la causa raíz, el tiempo de afectación y las medidas preventivas adoptadas para evitar su repetición futura."
+                "1. OBJETIVO DE GESTIÓN DE INCIDENTES": "Estandarizar y documentar el procedimiento operativo formal para la detección temprana, reporte estructurado, clasificación por criticidad, contención, análisis y resolución de los eventos e incidentes de seguridad de la información. Este marco metodológico busca minimizar el impacto operativo y financiero de un ataque cibernético y cumplir con los Controles A.5.24, A.5.25 y A.5.26 de la norma ISO/IEC 27001.",
+                "2. ALCANCE DEL PROCEDIMIENTO": "Este protocolo es de estricta aplicación para todos los empleados, contratistas y proveedores tecnológicos de las sedes operativas de SERGEM a nivel nacional frente a cualquier anomalía informática (infecciones por virus, caídas de la base de datos, robo de equipos o accesos no autorizados al ERP).",
+                "3. CANALES DE REPORTE Y DEBERES DEL COLABORADOR": "• Todo colaborador o tercero que detecte un comportamiento anómalo en el software (ej. lentitud extrema o pantallas de extorsión tipo Ransomware), la recepción de correos fraudulentos (Phishing), la pérdida de un equipo portátil o la sospecha firme de que un acceso no ha sido autorizado, tiene el deber ético, contractual y laboral de reportarlo sin demoras al Área de Soporte.\n• El reporte oficial se debe canalizar a través de la herramienta de Mesa de Ayuda (Helpdesk) generando un Ticket, o mediante las líneas de atención directas del Departamento de TI si la red ha colapsado.",
+                "4. TIEMPOS DE ESCALAMIENTO Y CLASIFICACIÓN (TRIAGE)": "Una vez recibido el reporte, TI debe realizar un Triage:\n• Incidente Leve o Moderado (Ej. Infección aislada en un PC administrativo): Resolución por soporte Nivel 1/2 en el transcurso del turno operativo.\n• Incidente Crítico (Ej. Fuga masiva de guías de clientes, caída general del Firewall, Ransomware en el servidor central): El equipo de TI tiene un plazo estricto e improrrogable inferior a una (1) hora para escalar el caso a la Dirección Administrativa y al Gerente General para la activación del Comité de Crisis y Plan de Continuidad (DRP).",
+                "5. REGISTRO, FORENSE Y LECCIONES APRENDIDAS (POST-MORTEM)": "Cada incidente que afecte de manera sensible la operación de SERGEM deberá ser cerrado con un informe técnico detallado (Bitácora Post-Mortem). Este informe debe plasmar la causa raíz del evento, la línea de tiempo de la afectación, el método de contención aplicado y, lo más valioso, las medidas preventivas e inversiones necesarias (acciones de mejora) adoptadas para mitigar el riesgo de que la misma vulnerabilidad vuelva a ser explotada en el futuro."
             }
         }
         
+    # 17. ACUERDOS DE CONFIDENCIALIDAD
     elif "acuerdo" in req or "servicio" in req or "confidencialidad" in req:
         return {
             "codigo": "PO-07-014",
             "tipo_firma": "CONTRATISTA / PROVEEDOR",
             "secciones": {
-                "1. OBJETO Y MARCO CONTRACTUAL": "Establecer los términos y condiciones obligatorias sobre Acuerdos de Nivel de Servicio (SLA) y Salvaguarda de Confidencialidad aplicables a todos los proveedores y terceros que presten servicios tecnológicos o logísticos a SERGEM Mensajería S.A.S.",
-                "2. CLÁUSULAS DE CONFIDENCIALIDAD ESTRICTA": "PRIMERA: El CONTRATISTA se obliga a mantener absoluta reserva sobre toda la información comercial, operativa, de clientes y bases de datos a las que tenga acceso, catalogándola como 'Información Confidencial'.\n\nSEGUNDA: El CONTRATISTA dará estricto cumplimiento a la normatividad de protección de datos personales (Ley 1581 de 2012).\n\nTERCERA: Queda prohibida la divulgación, comercialización o uso de los datos para fines distintos a los estrictamente pactados en el contrato principal de servicios."
+                "1. OBJETO Y MARCO LEGAL CONTRACTUAL": "Establecer de manera vinculante los términos legales, condiciones de Acuerdos de Nivel de Servicio (SLA) y la rigurosa Política de Salvaguarda de Confidencialidad y No Divulgación (NDA). Este documento es de aceptación y firma obligatoria por parte de todos los contratistas, auditores, consultores, proveedores de servicios tecnológicos, empresas de aseo y terceros que ingresen, interactúen o presten servicios directos a SERGEM Mensajería S.A.S. en cualquiera de sus sedes.",
+                "2. DEFINICIÓN DE INFORMACIÓN CONFIDENCIAL": "Se entiende como 'Información Confidencial' toda aquella información comercial, logística, contable, financiera, planes de expansión, contraseñas de red, códigos fuente, bases de datos de remitentes y destinatarios, y procedimientos operativos estándar a los que el CONTRATISTA tenga acceso físico, verbal o digital, por error o por necesidad del servicio, durante la vigencia de la relación comercial.",
+                "3. CLÁUSULAS DE CONFIDENCIALIDAD ESTRICTA Y PROTECCIÓN DE DATOS": "PRIMERA - DEBER DE SECRETO: El CONTRATISTA se obliga a mantener en la más absoluta reserva la Información Confidencial, adoptando para su protección las mismas medidas de seguridad que utilizaría para proteger sus propios secretos comerciales, pero nunca inferiores a un grado razonable de cuidado.\n\nSEGUNDA - HABEAS DATA: El CONTRATISTA dará estricto y total cumplimiento a las normativas de protección de datos personales vigentes en Colombia (Ley Estatutaria 1581 de 2012 y sus decretos reglamentarios), asumiendo total responsabilidad legal y pecuniaria en caso de pérdida, fuga o alteración de datos pertenecientes a los clientes finales de SERGEM.\n\nTERCERA - PROHIBICIONES: Queda terminantemente prohibida la divulgación, reproducción sin autorización escrita, comercialización, cesión o uso de la Información Confidencial para fines personales, competenciales o distintos a los estrictamente pactados para la prestación del servicio.",
+                "4. VIGENCIA Y CONSECUENCIAS POR INCUMPLIMIENTO": "El deber de reserva y secreto profesional no expira con la terminación del contrato de prestación de servicios, extendiéndose por un periodo de cinco (5) años posteriores (o indefinidamente para datos sujetos a Habeas Data). \n\nEl incumplimiento comprobado de estas cláusulas facultará a SERGEM Mensajería S.A.S. para dar por terminado el contrato comercial de forma unilateral, retener pagos pendientes por concepto de daños y perjuicios pre-tasados, y entablar las acciones legales civiles, penales y comerciales a que haya lugar en los tribunales competentes para el resarcimiento de los daños corporativos e imagen."
             }
         }
 
+    # 18. PERSONAL RETIRADO
     elif "retirado" in req or "base de datos" in req:
         return {
             "codigo": "PO-07-025",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DE CONTROL DE PERSONAL": "Asegurar que los procesos de desvinculación laboral o terminación de contratos con terceros incluyan la revocación oportuna y total de los accesos lógicos y físicos a las instalaciones y sistemas de SERGEM (Control A.6.5 de la ISO/IEC 27001).",
-                "2. PROTOCOLO DE DESVINCULACIÓN": "• Gestión Humana tiene la obligación de notificar formalmente al departamento de TI la novedad de retiro de cualquier colaborador el mismo día en que se genera la novedad.\n• El equipo de TI procederá a inhabilitar de manera inmediata (plazo máximo de 24 horas) las cuentas de correo electrónico, accesos al ERP, VPN y bases de datos.\n• Es requisito obligatorio para la firma del paz y salvo laboral la devolución de equipos portátiles, carnés, fichas de acceso y tokens de seguridad."
+                "1. OBJETIVO DEL CONTROL DE DESVINCULACIÓN": "Asegurar que los procesos de terminación de contratos laborales, renuncias, desvinculaciones con justa causa o finalización de convenios con terceros (Proveedores), incluyan la gestión segura, revocación total y oportuna de los accesos lógicos (sistemas) y físicos a las instalaciones de SERGEM Mensajería S.A.S. El fin principal es evitar fugas de información, represalias informáticas o sabotajes (Amenaza Interna) dando estricto cumplimiento al Control A.6.5 de la ISO/IEC 27001.",
+                "2. ALCANCE Y APLICABILIDAD": "Aplica para absolutamente todos los cargos y niveles jerárquicos (Gerentes, Supervisores, Jefes, Auxiliares Logísticos y Pasantes) en todas las sucursales a nivel nacional en el momento exacto en que cesa su vínculo laboral u operativo con la compañía.",
+                "3. PROTOCOLO DE NOTIFICACIÓN Y REVOCACIÓN LÓGICA": "• Notificación Obligatoria: La Gerencia de Gestión Humana (o la jefatura inmediata en su defecto) tiene el deber y la obligación indelegable de notificar formalmente y por escrito (correo/ticket) al departamento de TI la novedad de retiro de cualquier colaborador el mismo día en que se genera y firma el acta de desvinculación.\n• Purga de Accesos: Recibida la notificación, el equipo de TI procederá a inhabilitar de manera prioritaria e inmediata (estableciendo un SLA o plazo máximo crítico de 24 horas) el acceso al directorio activo, las cuentas de correo electrónico corporativo, los usuarios del ERP logístico (Freeway), los perfiles VPN y los permisos a carpetas de red compartidas.",
+                "4. DEVOLUCIÓN DE ACTIVOS FÍSICOS Y PAZ Y SALVO": "Es requisito indispensable y obligatorio para la firma del 'Paz y Salvo Laboral' la devolución física de la totalidad de los activos asignados al colaborador. \n\nEsto incluye: Equipos portátiles y cargadores, teléfonos móviles corporativos, carnés de identificación, tarjetas de acceso magnético/RFID, tokens de seguridad física (RSA) y cualquier documentación impresa, disco duro externo o memoria USB que contenga información confidencial de las rutas logísticas y clientes de SERGEM.",
+                "5. REDIRECCIÓN DE CORREOS Y RESPALDO (BACKUP DE SALIDA)": "Si el cargo del empleado desvinculado manejaba temas críticos con clientes externos o proveedores financieros, TI configurará (previa autorización de la Dirección Administrativa) una redirección temporal de su buzón de correo hacia la jefatura de su área por un periodo de 30 días, con el fin de asegurar la continuidad de los negocios en curso. Posteriormente, la cuenta será dada de baja y su buzón archivado."
             }
         }
         
+    # 19. PLANTILLA MAESTRA GENÉRICA DE RESPALDO (FALLBACK) PARA CUALQUIER DOCUMENTO NO ESPECIFICADO
     else:
-        cod_aleatorio = random.randint(10, 99)
+        cod_aleatorio = random.randint(100, 999)
+        titulo_seccion = requisito.title()
+        
         return {
-            "codigo": f"SG-07-0{cod_aleatorio}",
+            "codigo": f"SG-07-{cod_aleatorio}",
             "tipo_firma": "ELABORADO / REVISADO / APROBADO",
             "secciones": {
-                "1. OBJETIVO DEL DOCUMENTO Y MARCO NORMATIVO": f"Establecer los lineamientos técnicos, políticas restrictivas y controles operativos aplicables al proceso de: {requisito.title()}, en estricto cumplimiento del marco normativo internacional de la ISO/IEC 27001 para la seguridad de la información.",
-                "2. ALCANCE ORGANIZACIONAL": "Aplica de manera integral para todos los procesos operativos, administrativos, directivos y proveedores de servicios tecnológicos de SERGEM Mensajería S.A.S. a nivel nacional.",
-                "3. DIRECTRICES Y CONTROLES OPERATIVOS": "• Todo el personal involucrado debe adherirse estrictamente a las pautas de control definidas en este documento.\n• El área de TI y la Dirección Administrativa realizarán supervisiones y auditorías preventivas periódicas para verificar el grado de cumplimiento.\n• Cualquier desvío detectado será objeto de revisión correctiva inmediata.",
-                "4. COMPROMISOS Y MEJORA CONTINUA": "Garantizar la protección permanente de los activos informáticos, asegurando la confidencialidad, integridad y disponibilidad frente a riesgos o amenazas internas y externas."
+                "1. OBJETIVO Y MARCO NORMATIVO": f"Definir, documentar y formalizar detalladamente los lineamientos técnicos, administrativos, legales y operativos correspondientes al proceso de: {titulo_seccion}. \n\nEste documento rector ha sido estructurado técnica y estratégicamente para dar cumplimiento irrestricto a los requisitos exigidos por el estándar internacional de seguridad de la información ISO/IEC 27001:2022. Su propósito fundamental es garantizar la mitigación de vulnerabilidades y la preservación absoluta de la confidencialidad, integridad y disponibilidad del activo de información dentro de las bases de datos y la operación logística de SERGEM Mensajería S.A.S. \n\nAdicionalmente, este marco procedimental se alinea de manera taxativa con las disposiciones legales expedidas por el Congreso de la República de Colombia, respetando específicamente las directrices sancionatorias de la Ley 1581 de 2012 (Régimen General de Protección de Datos Personales / Habeas Data) y la Ley 1273 de 2009 (De los Delitos Informáticos y la Protección de la Información).",
+                "2. ALCANCE ORGANIZACIONAL E INFRAESTRUCTURA": f"Las obligaciones, parámetros técnicos y prohibiciones detalladas en el presente documento de {titulo_seccion} son de estricto y obligatorio acatamiento para todo el ecosistema laboral de la compañía. Esto incluye:\n\n• Colaboradores con contrato laboral directo (Término fijo e indefinido).\n• Personal temporal, operarios logísticos en misión y estudiantes en práctica.\n• Contratistas independientes, proveedores tecnológicos, consultores externos y cualquier tercero que interactúe, administre, provea o posea algún nivel de acceso lógico, remoto o físico a los sistemas de información de SERGEM Mensajería S.A.S.\n\nEste alcance tiene jurisdicción operativa e informática sobre la totalidad de la infraestructura de hardware, redes, sistemas core (incluyendo la plataforma Freeway), servidores virtuales, respaldos cloud, y de manera geográfica abarca la sede administrativa principal y todas las sedes logísticas ubicadas a nivel nacional en: Cali, Bogotá, Medellín, Barranquilla, Cartagena e Ibagué.",
+                "3. DEFINICIONES CLAVES Y TÉRMINOS TÉCNICOS": "Para la correcta comprensión y ejecución de las directrices plasmadas en este manual, se establecen las siguientes definiciones unificadas:\n\n• SGSI (Sistema de Gestión de Seguridad de la Información): Conjunto de políticas, procedimientos, directrices y recursos asociados para administrar y proteger integralmente la información corporativa, apoyados en la norma ISO 27001.\n• Freeway: Aplicativo de software y sistema core principal logístico mediante el cual SERGEM gestiona inventarios, rutas, envíos y datos de destinatarios finales.\n• Activo de Información: Cualquier conocimiento, base de datos, archivo de Excel, software, servidor, equipo de cómputo, o documentación impresa que tiene un valor operativo o estratégico para la compañía.\n• Evento / Incidente de Seguridad: Un suceso o serie de eventos anómalos o inesperados, confirmados o bajo sospecha, que amenazan con comprometer la seguridad de las redes de SERGEM, paralizando la operación o filtrando datos privados al exterior.",
+                "4. DIRECTRICES Y CONTROLES OPERATIVOS (ISO/IEC 27001)": f"Para la ejecución y mantenimiento adecuado de las actividades concernientes a {titulo_seccion}, el personal involucrado deberá observar y acatar, sin excepción, el siguiente esquema de reglas inquebrantables de seguridad de la información:\n\n1. Principio de Menor Privilegio Lógico: Todo acceso a carpetas compartidas, sistemas operativos, ERP o repositorios vinculados a esta actividad deberá estar restringido al mínimo indispensable para realizar la función encomendada. Todo permiso adicional deberá requerir justificación escrita.\n2. Trazabilidad y Bitácoras Inmutables: Todo registro, transacción crítica, auditoría de logs del sistema (Windows/Linux) o formulario físico derivado de este proceso deberá ser almacenado, protegido contra modificaciones accidentales y custodiado por un periodo de retención no menor a doce (12) meses para fines periciales y de auditoría externa (Kreston o entes de control).\n3. Prohibición de Extracción de Datos: Queda estrictamente prohibida la exportación, clonación, copia por USB o envío hacia correos electrónicos personales (Hotmail, Gmail, Yahoo, etc.) de información confidencial, bases de datos operativas o configuraciones de red asociadas a este documento. \n4. Intervención Rápida ante Incidentes: Si un colaborador llegase a observar una vulneración, lentitud anómala severa, sospecha de software malicioso o elusión de los parámetros aquí establecidos, deberá aplicar la contención primaria e informar obligatoriamente en un tiempo menor a treinta (30) minutos a la Mesa de Ayuda de TI (Helpdesk).",
+                "5. ROLES Y MATRIZ DE RESPONSABILIDADES ASIGNADAS": "El aseguramiento de este proceso es un trabajo conjunto y multidisciplinario en la compañía. Por lo tanto, se fijan las siguientes asignaciones y deberes según el cargo directivo y operativo:\n\n• Dirección General: Proveerá de manera oportuna y proporcional los recursos financieros, tecnológicos y el talento humano calificado para garantizar el mantenimiento y mejora del SGSI.\n• Dirección Administrativa (Yesenia Beltrán): Actuará como gestora y principal aval del cumplimiento normativo del SGSI, liderando las auditorías, programando las revisiones de matriz de riesgos y garantizando la coherencia documental corporativa.\n• Departamento de TI e Infraestructura: Recae sobre ellos la responsabilidad completamente técnica de diseñar, implementar, parchear, asegurar criptográficamente y auditar la plataforma tecnológica, de manera que los bloqueos y alertas respalden sistémicamente las reglas descritas.\n• Jefes de Área y Colaboradores Generales: Acatar invariablemente cada directriz, manteniendo en alto la cultura del cuidado del activo corporativo. Ignorar las reglas no exime de culpa al usuario.",
+                "6. RÉGIMEN DISCIPLINARIO Y SANCIONES POR INCUMPLIMIENTO": f"Las disposiciones establecidas en el presente documento operativo de {titulo_seccion} son un mandato directo de la Alta Gerencia de SERGEM. \n\nEl incumplimiento, la omisión, la evasión de controles técnicos, la negligencia grave que ocasione pérdida de disponibilidad, o la vulneración intencionada de estas normativas, constituye una violación sustancial y grave a las políticas de seguridad corporativas y obligaciones contractuales.\n\nLa detección de cualquier irregularidad será tipificada como falta y activará inmediatamente el proceso de descargos y el protocolo estipulado en el Reglamento Interno de Trabajo. Dependiendo de la afectación técnica y comercial del incidente, las medidas adoptadas por Gestión Humana podrán resultar en un llamado de atención con copia a la hoja de vida, suspensiones no remuneradas o la terminación unilateral e inmediata del contrato laboral por justa causa. Adicionalmente, si el incumplimiento derivase en la exfiltración o robo de bases de datos de clientes, SERGEM radicará las denuncias penales correspondientes ante la Fiscalía General de la Nación amparados en la ley contra delitos informáticos."
             }
         }
 
@@ -402,15 +457,18 @@ def generar_documento_pdf(requisito):
     datos_doc = obtener_datos_qms(requisito)
     output = io.BytesIO()
     
+    # Configuración de márgenes óptimos
     doc = SimpleDocTemplate(output, pagesize=letter, rightMargin=0.75*inch, leftMargin=0.75*inch, topMargin=0.6*inch, bottomMargin=0.6*inch)
     elements = []
     styles = getSampleStyleSheet()
     
+    # Estilos robustos de texto
     style_center = ParagraphStyle(name='Center', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
     style_normal = ParagraphStyle(name='Justify', parent=styles['Normal'], alignment=TA_JUSTIFY, fontName='Helvetica', fontSize=10, leading=14)
     style_bold_center = ParagraphStyle(name='BoldCenter', parent=styles['Normal'], alignment=TA_CENTER, fontName='Helvetica-Bold', fontSize=10)
-    style_title = ParagraphStyle(name='SectionTitle', parent=styles['Normal'], alignment=TA_LEFT, fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#002b5e'))
+    style_title = ParagraphStyle(name='SectionTitle', parent=styles['Normal'], alignment=TA_LEFT, fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor('#002b5e'), spaceAfter=8)
 
+    # Logo del Header
     logo_path = "sergemLogo.png"
     if os.path.exists(logo_path):
         logo_img = RLImage(logo_path, width=1.0*inch, height=1.0*inch)
@@ -420,6 +478,7 @@ def generar_documento_pdf(requisito):
     dia_aleatorio = random.randint(1, 28)
     fecha_generada = f"{dia_aleatorio:02d}/05/{ANIO_ACTUAL}"
 
+    # Encabezado (Header Tabla ISO)
     header_data = [
         [logo_img, Paragraph(requisito.upper(), style_center), '', '', logo_img],
         ['', Paragraph(f"Código: {datos_doc['codigo']}", style_bold_center), Paragraph("Versión No.1", style_bold_center), Paragraph(fecha_generada, style_bold_center), '']
@@ -439,6 +498,7 @@ def generar_documento_pdf(requisito):
     elements.append(t_header)
     elements.append(Spacer(1, 0.25*inch))
 
+    # Construcción de las secciones
     for titulo, contenido in datos_doc['secciones'].items():
         contenido_rl = contenido.replace('\n', '<br/>')
         body_data = [
@@ -451,35 +511,40 @@ def generar_documento_pdf(requisito):
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#f8f9fa')),
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 12),
             ('TOPPADDING', (0,0), (-1,-1), 10),
-            ('LEFTPADDING', (0,0), (-1,-1), 10),
-            ('RIGHTPADDING', (0,0), (-1,-1), 10),
+            ('LEFTPADDING', (0,0), (-1,-1), 12),
+            ('RIGHTPADDING', (0,0), (-1,-1), 12),
         ]))
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    elements.append(BottomPusher(block_height=95))
+    # SOLUCIÓN DE RECUADROS DE FIRMA
+    elements.append(CondPageBreak(120))
+    elements.append(BottomSpacer(100))
 
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
         sig_data = [
             [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
-            [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
-             Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
-             Paragraph("Nombre: José Reinel Torres<br/>Cargo: Gerente", style_normal)]
+            [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa<br/><br/>Firma: ________________________", style_normal),
+             Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa<br/><br/>Firma: ________________________", style_normal),
+             Paragraph("Nombre: José Reinel Torres<br/>Cargo: Gerente General<br/><br/>Firma: ________________________", style_normal)]
         ]
         t_sig = Table(sig_data, colWidths=[2.33*inch, 2.33*inch, 2.33*inch])
         t_sig.setStyle(TableStyle([
             ('GRID', (0,0), (-1,-1), 1, colors.black),
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 12),
             ('TOPPADDING', (0,0), (-1,-1), 8),
-            ('LEFTPADDING', (0,0), (-1,-1), 6),
+            ('LEFTPADDING', (0,0), (-1,-1), 8),
+            ('RIGHTPADDING', (0,0), (-1,-1), 8),
         ]))
-        elements.append(t_sig)
+        # KeepTogether ancla herméticamente la tabla
+        elements.append(KeepTogether(t_sig))
     else:
-        elements.append(Paragraph(f"{datos_doc['tipo_firma']}: ___________________________________", style_bold_center))
+        firma_texto = Paragraph(f"<br/><br/>{datos_doc['tipo_firma']}: ___________________________________", style_bold_center)
+        elements.append(KeepTogether(firma_texto))
     
     doc.build(elements)
     return output.getvalue()
@@ -672,6 +737,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
+        # Validación en la carpeta Auditoría y todas sus subcarpetas
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
             (df_archivos['ruta'].str.contains('Auditoría', case=False, na=False))
@@ -788,7 +854,7 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 req_selec = st.selectbox("Seleccione el documento a generar:", lista_faltantes)
                 
                 if st.button(f"🪄 Descargar PDF Oficial: {req_selec}"):
-                    with st.spinner("Compilando PDF..."):
+                    with st.spinner("Compilando Documento Normativo..."):
                         archivo_pdf = generar_documento_pdf(req_selec)
                         nombre_descarga = f"{req_selec.replace('/', '_').replace(' ', '_')}_SERGEM_{ANIO_ACTUAL}.pdf"
                         
@@ -803,8 +869,8 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
                 st.success("✅ ¡Todos los documentos están listos!")
 
         with col_auto:
-            st.markdown("### 🚀 Módulo de Actualización y Empaque")
-            st.info(f"Se actualizará el Inventario de TI y se empaquetarán los **{len(archivos_validos)}** documentos validados en el repositorio de Auditoría.")
+            st.markdown("### 🚀 Módulo de Actualización y Sincronización")
+            st.info(f"Se actualizará el Inventario de TI y se sincronizarán los **{len(archivos_validos)}** documentos validados en el repositorio de Auditoría.")
             
             if st.button(f"▶️ Sincronizar Repositorio Oficial {ANIO_ACTUAL}", type="primary"):
                 st.session_state.mostrar_salvavidas = False 
