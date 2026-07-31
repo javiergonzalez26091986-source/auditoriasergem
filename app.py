@@ -12,7 +12,7 @@ import unicodedata
 
 # LIBRERÍAS PARA GENERACIÓN DIRECTA DE PDF
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, KeepTogether
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage, CondPageBreak, KeepTogether, Flowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
@@ -163,7 +163,30 @@ def remover_acentos(texto):
     return "".join(c for c in unicodedata.normalize('NFD', str(texto)) if unicodedata.category(c) != 'Mn').upper()
 
 # -----------------------------------------------------------------------------
-# 3. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN 100% EXHAUSTIVA Y PROFESIONAL ISO 27001)
+# 3. CLASE AUXILIAR DE ESPACIO DINÁMICO (FIJA EL RECUADRO EXACTAMENTE ABAJO)
+# -----------------------------------------------------------------------------
+class BottomSpacer(Flowable):
+    """
+    Componente matemático que calcula el espacio restante de la página actual 
+    y estira el flujo para anclar el recuadro de firmas exactamente en el margen inferior.
+    """
+    def __init__(self, block_height):
+        Flowable.__init__(self)
+        self.block_height = block_height
+
+    def wrap(self, availWidth, availHeight):
+        self.width = availWidth
+        if availHeight < self.block_height:
+            self.height = 0 
+        else:
+            self.height = availHeight - self.block_height
+        return self.width, self.height
+
+    def draw(self):
+        pass
+
+# -----------------------------------------------------------------------------
+# 4. MOTOR INTELIGENTE QMS (DOCUMENTACIÓN 100% EXHAUSTIVA Y PROFESIONAL ISO 27001)
 # -----------------------------------------------------------------------------
 def obtener_datos_qms(requisito):
     req = requisito.lower()
@@ -491,11 +514,13 @@ def generar_documento_pdf(requisito):
         elements.append(t_body)
         elements.append(Spacer(1, 0.15*inch))
 
-    # SOLUCIÓN DE RECUADROS: Espacio natural y KeepTogether (Evita desfases)
-    elements.append(Spacer(1, 0.5*inch))
+    # -------------------------------------------------------------------------
+    # ANCLAJE MATEMÁTICO INFERIOR (CONDITIONAL PAGE BREAK + BOTTOM SPACER)
+    # -------------------------------------------------------------------------
+    elements.append(CondPageBreak(120))
+    elements.append(BottomSpacer(100))
 
     if datos_doc['tipo_firma'] == "ELABORADO / REVISADO / APROBADO":
-        # Se remueven los textos de "Firma: ______" según instrucción
         sig_data = [
             [Paragraph("Elaborado por:", style_bold_center), Paragraph("Revisado por:", style_bold_center), Paragraph("Aprobado por:", style_bold_center)],
             [Paragraph("Nombre: Yesenia Beltrán<br/>Cargo: Directora Administrativa", style_normal),
@@ -512,7 +537,6 @@ def generar_documento_pdf(requisito):
             ('LEFTPADDING', (0,0), (-1,-1), 8),
             ('RIGHTPADDING', (0,0), (-1,-1), 8),
         ]))
-        # KeepTogether ancla herméticamente la tabla, si no cabe, pasa a la otra hoja.
         elements.append(KeepTogether(t_sig))
     else:
         firma_texto = Paragraph(f"<br/><br/>{datos_doc['tipo_firma']}: ___________________________________", style_bold_center)
@@ -709,7 +733,6 @@ elif seleccion == "🛠️ Preparador de Auditoría Automático":
     """, unsafe_allow_html=True)
 
     if not df_archivos.empty:
-        # Validación en la carpeta Auditoría y todas sus subcarpetas
         df_archivos_base = df_archivos[
             (df_archivos['tipo'] == 'Archivo') & 
             (df_archivos['ruta'].str.contains('Auditoría', case=False, na=False))
